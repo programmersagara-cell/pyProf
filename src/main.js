@@ -208,15 +208,11 @@ function boot() {
   }
 }
 
-// Global error handler as a last resort
+// Global error handler: log only. Do NOT tear down the UI here —
+// runtime errors after boot (e.g. a Pyodide hiccup) must never trigger
+// the "Failed to load the application" fallback or wipe the workspace.
 window.addEventListener("error", (e) => {
   console.error("[python-lab] global error:", e.error || e.message);
-  // If the boot overlay is still up, remove it so the user can see the UI
-  const overlay = document.querySelector(".boot");
-  if (overlay) {
-    overlay.remove();
-    setView("workspace");
-  }
 });
 
 // Last-resort safety net: if boot() itself throws synchronously, still show the UI.

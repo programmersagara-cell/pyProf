@@ -17,8 +17,9 @@ class PythonEngine {
   emit(event, data) { this.listeners[event]?.forEach((fn) => fn(data)); }
 
   spawnWorker() {
-    // Use an absolute path so the worker resolves correctly regardless of the page URL
-    const workerUrl = new URL("src/engine/pyodideWorker.js", document.baseURI).href;
+    // Resolve relative to THIS module file, so it works on any base path:
+    // localhost, /pyProf/, or https://USERNAME.github.io/REPOSITORY-NAME/
+    const workerUrl = new URL("./pyodideWorker.js", import.meta.url).href;
     this.worker = new Worker(workerUrl, { type: "classic" });
     this.worker.onmessage = (e) => this._handleMessage(e.data);
     this.worker.onerror = (e) => {

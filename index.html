@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/neo.min.css">
-<link rel="stylesheet" href="src/styles/main.css">
+<link rel="stylesheet" href="./src/styles/main.css">
 </head>
 <body>
 <a class="skip-link" href="#viewRoot">Skip to content</a>
@@ -49,10 +49,11 @@
   </noscript>
   <div id="jsFallback" class="boot fallback-boot" style="display:none">
     <div class="logo">🐍</div>
-    <div class="bt" style="color:var(--orange);font-size:15px;max-width:480px;text-align:center;padding:0 20px">
+    <div class="bt" style="color:var(--orange);font-size:15px;max-width:520px;text-align:center;padding:0 20px">
       <b>Failed to load the application</b><br><br>
-      The JavaScript modules could not be loaded. This usually happens when opening the page directly from your computer (file://) instead of through a web server.<br><br>
-      <b>To fix:</b> Use a local web server, or deploy to GitHub Pages / Vercel / Netlify.
+      <span id="jsFallbackMsg">The JavaScript modules could not be loaded.</span><br><br>
+      <span id="jsFallbackDetail" style="font-size:12.5px;opacity:.85"></span><br><br>
+      <b>To fix:</b> Check your internet connection (CodeMirror &amp; Pyodide load from a CDN), then reload. No local server is required on GitHub Pages.
     </div>
     <button onclick="location.reload()" style="margin-top:18px;background:var(--accent);color:#111;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Reload page</button>
   </div>
@@ -83,18 +84,52 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/python-hint.min.js"></script>
 <script>
-  // If main.js module fails to load, show the fallback message
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      if (!window.__pythonLabLoaded) {
-        document.getElementById('jsFallback').style.display = 'flex';
-        // Remove any stuck boot overlay
-        var overlay = document.querySelector('.boot:not(.fallback-boot)');
-        if (overlay) overlay.remove();
+  // Diagnostics for GitHub Pages: capture the REAL module load error (no false file:// blame).
+  (function () {
+    function showFallback(reason) {
+      var box = document.getElementById('jsFallback');
+      if (!box || window.__pythonLabLoaded) return;
+      box.style.display = 'flex';
+      var overlay = document.querySelector('.boot:not(.fallback-boot)');
+      if (overlay) overlay.remove();
+      if (reason) {
+        var d = document.getElementById('jsFallbackDetail');
+        if (d) d.textContent = 'Details: ' + reason;
+        console.error('[python-lab] boot failure:', reason);
       }
-    }, 3000);
-  });
+    }
+    window.__pythonLabFail = showFallback;
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      // Resource load error (script/link/module 404, CSP block, offline CDN…)
+      if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) {
+        var src = t.src || t.href || '';
+        showFallback('A script or stylesheet failed to load: ' + src);
+      } else if (e.message && !window.__pythonLabLoaded) {
+        showFallback(e.message);
+      }
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) {
+      if (!window.__pythonLabLoaded) {
+        showFallback('' + ((e.reason && (e.reason.message || e.reason)) || e.reason || 'unknown error'));
+      }
+    });
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (!window.__pythonLabLoaded) {
+          var hint = location.protocol === 'file:'
+            ? 'It looks like this page was opened directly from disk (file://), where ES modules are blocked by the browser. Please use the GitHub Pages URL instead.'
+            : 'The app module did not report success. This is usually a blocked/failed CDN script or an incorrect base path — see Details above and the browser console (F12).';
+          var m = document.getElementById('jsFallbackMsg');
+          if (m) m.textContent = 'The JavaScript modules could not be loaded. ' + hint;
+          document.getElementById('jsFallback').style.display = 'flex';
+          var overlay = document.querySelector('.boot:not(.fallback-boot)');
+          if (overlay) overlay.remove();
+        }
+      }, 4000);
+    });
+  })();
 </script>
-<script type="module" src="src/main.js"></script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -1,6 +1,24 @@
 /* PYTHON·LAB — CodeMirror editor factory. */
 
 export function createPythonEditor(host, initialValue = "", opts = {}) {
+  // GitHub Pages hardening: if the CodeMirror CDN was blocked/offline,
+  // fall back to a plain <textarea> so the app still boots instead of
+  // throwing `CodeMirror is not defined` and tripping the global fallback.
+  if (typeof CodeMirror === "undefined") {
+    console.warn("[python-lab] CodeMirror CDN unavailable — using textarea fallback.");
+    const ta = document.createElement("textarea");
+    ta.value = initialValue;
+    ta.style.cssText = "width:100%;height:" + (typeof opts.height === "number" ? opts.height + "px" : (opts.height || "320px")) + ";background:var(--panel2);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical;";
+    host.appendChild(ta);
+    return {
+      getValue: () => ta.value,
+      setValue: (v) => { ta.value = v; },
+      focus: () => ta.focus(),
+      refresh: () => {},
+      setOption: () => {},
+      setSize: () => {},
+    };
+  }
   const cm = CodeMirror(host, {
     value: initialValue,
     mode: "python",

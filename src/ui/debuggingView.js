@@ -2,7 +2,7 @@
 
 import { debugChallenges } from "../challenges/debugging.js";
 import { engine } from "../engine/pythonEngine.js";
-import { explainError, renderErrorHTML, escapeHtml } from "../engine/errorHandler.js";
+import { explainError, renderErrorHTML } from "../engine/errorHandler.js";
 import { createPythonEditor } from "../editor/editor.js";
 import { validateChallenge } from "../validation/validator.js";
 import { progress } from "../progress/progress.js";

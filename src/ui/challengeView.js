@@ -5,7 +5,7 @@ import { intermediateChallenges } from "../challenges/intermediate.js";
 import { advancedChallenges } from "../challenges/advanced.js";
 import { allChallenges } from "../challenges/index.js";
 import { engine } from "../engine/pythonEngine.js";
-import { explainError, renderErrorHTML, escapeHtml } from "../engine/errorHandler.js";
+import { explainError, renderErrorHTML } from "../engine/errorHandler.js";
 import { createPythonEditor } from "../editor/editor.js";
 import { runExample, runTests } from "../validation/testRunner.js";
 import { progress } from "../progress/progress.js";

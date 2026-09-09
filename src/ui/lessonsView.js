@@ -2,7 +2,7 @@
 
 import { lessons } from "../lessons/lessons.js";
 import { engine } from "../engine/pythonEngine.js";
-import { explainError, renderErrorHTML, escapeHtml } from "../engine/errorHandler.js";
+import { explainError, renderErrorHTML } from "../engine/errorHandler.js";
 import { createPythonEditor } from "../editor/editor.js";
 import { progress } from "../progress/progress.js";
 import { history } from "../history/history.js";
