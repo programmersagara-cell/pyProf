@@ -56,11 +56,15 @@ export function renderLessonDetail(root, lessonId, openLesson) {
   const lesson = lessons[idx];
   if (!lesson) { renderLessons(root, { openLesson }); return; }
 
+  const lessonDone = progress.isLessonDone(lesson.id);
   root.innerHTML = `
   <div class="lesson-detail">
     <button class="crumb" id="backToLessons">← All lessons</button>
     <h1>${escapeHtml(lesson.title)}</h1>
-    <span class="badge-pill p">Lesson ${lesson.num} · ${escapeHtml(lesson.track)}</span>
+    <div class="tile-row">
+      <span class="badge-pill p">Lesson ${lesson.num} · ${escapeHtml(lesson.track)}</span>
+      <span class="done-pill" id="lessonDonePill" ${lessonDone ? "" : "hidden"}>✓ Completed</span>
+    </div>
 
     <div class="sec"><h2>Explanation</h2><div class="exp-text">${lesson.explanation}</div></div>
     <div class="sec"><h2>Syntax</h2><pre class="codeblock">${escapeHtml(lesson.syntax)}</pre></div>
@@ -85,7 +89,7 @@ export function renderLessonDetail(root, lessonId, openLesson) {
         <div class="mini-bar">
           <button class="pbtn primary" id="miniRun">Run</button>
           <button class="pbtn" id="miniReset">Reset</button>
-          <button class="pbtn" id="miniComplete">Mark lesson complete</button>
+          <button class="pbtn${lessonDone ? "" : " primary"}" id="miniComplete"${lessonDone ? " disabled" : ""}>${lessonDone ? "✓ Lesson completed" : "Mark lesson complete"}</button>
         </div>
         <div class="mini-out" id="miniOut" aria-live="polite">Output…</div>
       </div>
@@ -129,5 +133,10 @@ export function renderLessonDetail(root, lessonId, openLesson) {
     const res = progress.completeLesson(lesson.id, lesson.track);
     if (res) toast(`+${res.gained} XP — lesson complete!`, true);
     else toast("Lesson already completed");
+    // Persisted: reflect completion immediately in this view.
+    const btn = document.getElementById("miniComplete");
+    if (btn) { btn.textContent = "✓ Lesson completed"; btn.disabled = true; btn.classList.remove("primary"); }
+    const pill = document.getElementById("lessonDonePill");
+    if (pill) pill.hidden = false;
   });
 }

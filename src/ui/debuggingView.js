@@ -42,6 +42,7 @@ function renderBugDetail(root, bugId, openBug) {
   if (!bug) { openBug(null); return; }
   let hintsShown = 0;
 
+  const done = progress.isDebugDone(bug.id);
   root.innerHTML = `
   <div class="ch-detail">
     <aside class="ch-side bug-side">
@@ -50,6 +51,7 @@ function renderBugDetail(root, bugId, openBug) {
       <div class="tile-row">
         <span class="badge-pill ${difficultyClass(bug.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${escapeHtml(bug.bugType)}</span>
         <span class="badge-pill p">${escapeHtml(bug.track)}</span>
+        <span class="done-pill" id="bugDonePill" ${done ? "" : "hidden"}>✓ Completed</span>
       </div>
       <div class="spec">${escapeHtml(bug.task)}</div>
       <div class="spec"><b>Expected output:</b><pre class="codeblock">${escapeHtml(bug.expected)}</pre></div>
@@ -120,6 +122,13 @@ function renderBugDetail(root, bugId, openBug) {
   document.getElementById("bugValidate").addEventListener("click", async () => {
     const out = document.getElementById("bugOut");
     const resultBox = document.getElementById("bugResult");
+    const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+    if (st.state === "error") { out.textContent = "Python engine failed to load: " + (st.message || ""); return; }
+    if (!engine.ready) {
+      out.textContent = "Waiting for Python engine… (still loading)";
+      const ok = await engine.waitForReady(90000);
+      if (!ok) { out.textContent = "Python engine is still loading. Please wait, then Validate again."; return; }
+    }
     out.textContent = "Validating…";
     const code = cm.getValue();
     // Validation = behaviour: the fixed program must produce the expected output.
@@ -145,6 +154,9 @@ function renderBugDetail(root, bugId, openBug) {
         <h3><span class="verdict">PASS</span>Bug fixed — the program behaves correctly now</h3>
       </div>`;
     if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
+    else toast("Already completed — no additional XP");
     for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
+    const pill = document.getElementById("bugDonePill");
+    if (pill) pill.hidden = false;
   });
 }

@@ -245,6 +245,14 @@ html[data-theme="light"] .pbtn.primary{color:#fff}
 .badge-pill .lvl-dots{display:inline-flex;gap:2px}
 .badge-pill .lvl-dots i{width:5px;height:5px;border-radius:var(--r-pill);background:currentColor;opacity:.35}
 .badge-pill.b .lvl-dots i:first-child,.badge-pill.i .lvl-dots i:nth-child(-n+2),.badge-pill.a .lvl-dots i{opacity:1}
+/* Completion marker for detail headers: structural, text-labelled, not color-only. */
+.done-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--font-mono);font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  border-radius:var(--r-pill);padding:2px 9px;
+  background:var(--green-dim);border:1px solid var(--green);color:var(--text);
+}
+.done-pill::before{content:"";width:6px;height:6px;border-radius:var(--r-pill);background:var(--green)}
 .lesson-detail{max-width:860px;margin:0 auto;padding:var(--sp-6);overflow-y:auto}
 .lesson-detail h1{font-size:var(--fs-20);margin-bottom:var(--sp-1)}
 .crumb{background:none;border:none;color:var(--accent);font-size:var(--fs-13);cursor:pointer;padding:0;margin-bottom:var(--sp-2)}

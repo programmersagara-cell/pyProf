@@ -71,6 +71,7 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
   let hintsShown = 0;
   let usedSolution = false;
 
+  const done = progress.isChallengeDone(ch.id);
   root.innerHTML = `
   <div class="ch-detail">
     <aside class="ch-side">
@@ -79,6 +80,7 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
       <div class="tile-row">
         <span class="badge-pill ${difficultyClass(ch.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${ch.difficulty}</span>
         <span class="badge-pill p">${escapeHtml(ch.track)}</span>
+        <span class="done-pill" id="chDonePill" ${done ? "" : "hidden"}>✓ Completed</span>
       </div>
       <div class="spec">${ch.brief}<ul>${ch.tasks.map((t) => `<li>${t}</li>`).join("")}</ul></div>
       ${ch.requires ? `<div class="constraint must"><b>Required:</b> your code must use ${ch.requires.map((r) => `<code>${escapeHtml(r)}</code>`).join(", ")}</div>` : ""}
@@ -176,7 +178,11 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
     const badges = evaluateBadges({ challenges: allChallenges.length, lessons: 44 });
     resultBox.innerHTML = resultCard(true, validation);
     if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
+    else toast("Already completed — no additional XP");
     for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
+    // Reflect completion immediately in the detail header.
+    const pill = document.getElementById("chDonePill");
+    if (pill) pill.hidden = false;
   }
 
   document.getElementById("chRun").addEventListener("click", doRun);
