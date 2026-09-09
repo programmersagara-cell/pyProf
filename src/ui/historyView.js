@@ -9,11 +9,11 @@ export function renderHistory(root, { loadCode }) {
   root.innerHTML = `
   <div class="page">
     <div class="view-head">
-      <h1>🕘 Code History</h1>
+      <h1>Code History <span class="count-chip">last 50 runs</span></h1>
       <p>The last 50 executed programs, stored only on this device.</p>
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
         <input type="search" class="searchbox" style="margin-top:0" id="histSearch" placeholder="Search history…" aria-label="Search history">
-        <button class="pbtn danger" id="histClear">🗑 Clear all history</button>
+        <button class="pbtn danger" id="histClear">Clear all history</button>
       </div>
     </div>
     <div id="histList"></div>
@@ -22,7 +22,7 @@ export function renderHistory(root, { loadCode }) {
   const list = document.getElementById("histList");
   const draw = (items) => {
     if (!items.length) {
-      list.innerHTML = `<div class="empty-hint"><span class="big">🕘</span>Nothing here yet. Run some code in the Workspace!</div>`;
+      list.innerHTML = `<div class="empty-hint"><span class="empty-title">No runs recorded yet</span>Execute a program in the Workspace — every run is stored here on this device only.</div>`;
       return;
     }
     list.innerHTML = "";

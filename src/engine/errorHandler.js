@@ -105,7 +105,7 @@ export function renderErrorHTML(ex) {
   if (ex.message) html += `<span class="err-b">${escapeHtml(ex.message)}</span>\n`;
   if (ex.lineNo) html += `<span class="err-line">Line ${ex.lineNo}:${ex.codeLine ? " " + escapeHtml(ex.codeLine) : ""}</span>\n`;
   if (ex.friendly) {
-    html += `\n<span class="err-b">💡 ${ex.friendly.title}</span>\n`;
+    html += `<span class="err-b">Hint — ${ex.friendly.title}</span>\n`;
     html += `<span class="err-b">${ex.friendly.explain}</span>\n`;
     if (ex.friendly.fix) html += `\n<span class="err-try">Try:</span>\n<span class="out">${escapeHtml(ex.friendly.fix)}</span>\n`;
   }

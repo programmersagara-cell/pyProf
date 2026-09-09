@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="PYTHON·LAB — The In-Browser Python Learning Workbench. Write and run real Python in your browser.">
 <title>PYTHON·LAB — Interactive Python Learning Workbench</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234d9fff'/><text x='16' y='22' font-family='monospace' font-size='15' font-weight='bold' fill='%230b1524' text-anchor='middle'>Py</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/neo.min.css">
@@ -16,22 +16,22 @@
 
 <header class="topbar" role="banner">
   <button class="brand" id="brandHome" aria-label="PYTHON·LAB home">
-    <span class="brand-snake" aria-hidden="true">🐍</span>
+    <span class="brand-mark" aria-hidden="true">Py</span>
     <span class="brand-text">PYTHON<i>·</i>LAB</span>
   </button>
   <nav class="mainnav" id="mainNav" role="navigation" aria-label="Main navigation">
-    <button class="navbtn active" data-view="workspace" title="Workspace (1)">⌨ Workspace</button>
-    <button class="navbtn" data-view="lessons" title="Lessons (2)">📚 Lessons</button>
-    <button class="navbtn" data-view="challenges" title="Challenges (3)">🏆 Challenges</button>
-    <button class="navbtn" data-view="debugging" title="Debugging (4)">🐛 Debugging</button>
-    <button class="navbtn" data-view="cheatsheet" title="Cheat Sheet (5)">📖 Cheat Sheet</button>
-    <button class="navbtn" data-view="analytics" title="Progress (6)">📊 Progress</button>
-    <button class="navbtn" data-view="history" title="History (7)">🕘 History</button>
+    <button class="navbtn active" data-view="workspace" title="Workspace (1)">Workspace<span class="navkey">1</span></button>
+    <button class="navbtn" data-view="lessons" title="Lessons (2)">Lessons<span class="navkey">2</span></button>
+    <button class="navbtn" data-view="challenges" title="Challenges (3)">Challenges<span class="navkey">3</span></button>
+    <button class="navbtn" data-view="debugging" title="Debugging (4)">Debugging<span class="navkey">4</span></button>
+    <button class="navbtn" data-view="cheatsheet" title="Cheat Sheet (5)">Cheat Sheet<span class="navkey">5</span></button>
+    <button class="navbtn" data-view="analytics" title="Progress (6)">Progress<span class="navkey">6</span></button>
+    <button class="navbtn" data-view="history" title="History (7)">History<span class="navkey">7</span></button>
   </nav>
   <div class="topbar-right">
     <div class="xp-widget" id="xpWidget" aria-live="polite" title="XP and level"></div>
-    <button class="iconbtn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">⌘</button>
-    <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle dark or light theme">🌙</button>
+    <button class="iconbtn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+    <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle dark or light theme">Dark</button>
   </div>
 </header>
 
@@ -39,8 +39,8 @@
   <!-- Fallback message if JS fails to load -->
   <noscript>
     <div class="boot fallback-boot" style="cursor:default">
-      <div class="logo">🐍</div>
-      <div class="bt" style="color:var(--orange);font-size:15px;max-width:480px;text-align:center;padding:0 20px">
+      <div class="boot-mark">Py</div>
+      <div class="bt" style="color:var(--amber);font-size:15px;max-width:480px;text-align:center;padding:0 20px">
         <b>JavaScript is required</b><br><br>
         PYTHON·LAB runs entirely in your browser using JavaScript and WebAssembly.<br>
         Please enable JavaScript and reload this page.
@@ -48,8 +48,8 @@
     </div>
   </noscript>
   <div id="jsFallback" class="boot fallback-boot" style="display:none">
-    <div class="logo">🐍</div>
-    <div class="bt" style="color:var(--orange);font-size:15px;max-width:520px;text-align:center;padding:0 20px">
+    <div class="boot-mark">Py</div>
+    <div class="bt" style="color:var(--amber);font-size:15px;max-width:520px;text-align:center;padding:0 20px">
       <b>Failed to load the application</b><br><br>
       <span id="jsFallbackMsg">The JavaScript modules could not be loaded.</span><br><br>
       <span id="jsFallbackDetail" style="font-size:12.5px;opacity:.85"></span><br><br>

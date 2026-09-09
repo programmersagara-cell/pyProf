@@ -8,7 +8,7 @@ export function renderCheatsheet(root) {
   root.innerHTML = `
   <div class="page">
     <div class="view-head">
-      <h1>📖 Python Cheat Sheet</h1>
+      <h1>Python Cheat Sheet <span class="count-chip">${cheatSheet.length} topics</span></h1>
       <p>${cheatSheet.length} quick-reference topics with syntax, use cases, examples and common mistakes.</p>
       <input type="search" class="searchbox" id="csSearch" placeholder="Search topics… (e.g. slice, except, while)" aria-label="Search cheat sheet">
     </div>
@@ -33,7 +33,7 @@ export function renderCheatsheet(root) {
             <p class="when"><b>When to use:</b> ${escapeHtml(c.when)}</p>
             <p class="when"><b>Example:</b></p>
             <pre class="codeblock" style="border-color:var(--green)">${escapeHtml(c.example)}</pre>
-            <p class="cs-mistake">⚠ Common mistake: <code>${escapeHtml(c.mistake)}</code></p>
+            <p class="cs-mistake">Common mistake: <code>${escapeHtml(c.mistake)}</code></p>
           </article>`);
       }
       body.appendChild(catDiv);

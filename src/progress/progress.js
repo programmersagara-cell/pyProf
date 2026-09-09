@@ -134,7 +134,7 @@ export class Progress {
     if (firstTry) total += XP.firstTryBonus;
     const streakBonus = this.touchStreak();
     const res = this.addXP(total, kind === "debug" ? "debug challenge" : "challenge");
-    this.recordEvent(`✅ Solved ${kind === "debug" ? "bug" : "challenge"}: ${id}`);
+    this.recordEvent(`Solved ${kind === "debug" ? "bug" : "challenge"}: ${id}`);
     res.gained = total + streakBonus;
     return res;
   }

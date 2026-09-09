@@ -17,8 +17,8 @@ export function renderDebugging(root, { openBug, currentId }) {
   root.innerHTML = `
   <div class="page">
     <div class="view-head">
-      <h1>🐛 Debugging Practice</h1>
-      <p>Broken programs to find &amp; fix: syntax, logical, runtime, indentation and variable errors. Fixed: ${doneCount}/${debugChallenges.length}.</p>
+      <h1>Debugging Practice <span class="count-chip">${doneCount}/${debugChallenges.length} fixed</span></h1>
+      <p>Broken programs to find and fix: syntax, logical, runtime, indentation and variable errors.</p>
     </div>
     <div class="grid" id="bugGrid" role="list"></div>
   </div>`;
@@ -30,8 +30,8 @@ export function renderDebugging(root, { openBug, currentId }) {
     tile.className = "tile" + (done ? " done" : "");
     tile.setAttribute("role", "listitem");
     tile.innerHTML = `
-      <span class="badge-pill ${difficultyClass(d.difficulty)}">${escapeHtml(d.bugType)}</span>
-      <h3>${done ? "✅ " : ""}🐛 ${escapeHtml(d.title)}</h3>
+      <span class="badge-pill ${difficultyClass(d.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${escapeHtml(d.bugType)}</span>
+      <h3>${done ? `<span class="done-mark" aria-label="completed">[done]</span>` : ""}${escapeHtml(d.title)}</h3>
       <span class="meta-line">${escapeHtml(d.track)}</span>`;
     tile.addEventListener("click", () => openBug(d.id));
     grid.appendChild(tile);
@@ -45,14 +45,16 @@ function renderBugDetail(root, bugId, openBug) {
   root.innerHTML = `
   <div class="ch-detail">
     <aside class="ch-side bug-side">
-      <button class="crumb" id="bugBack">← All bugs</button>
-      <h1>🐛 ${escapeHtml(bug.title)}</h1>
-      <span class="badge-pill ${difficultyClass(bug.difficulty)}">${escapeHtml(bug.bugType)}</span>
-      <span class="badge-pill p">${escapeHtml(bug.track)}</span>
+      <button class="crumb" id="bugBack">← All exercises</button>
+      <h1>${escapeHtml(bug.title)}</h1>
+      <div class="tile-row">
+        <span class="badge-pill ${difficultyClass(bug.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${escapeHtml(bug.bugType)}</span>
+        <span class="badge-pill p">${escapeHtml(bug.track)}</span>
+      </div>
       <div class="spec">${escapeHtml(bug.task)}</div>
       <div class="spec"><b>Expected output:</b><pre class="codeblock">${escapeHtml(bug.expected)}</pre></div>
       <div id="hintArea"></div>
-      <button class="pbtn" id="bugHint" style="margin-top:10px">💡 Get a hint (0/3)</button>
+      <button class="pbtn" id="bugHint" style="margin-top:10px">Get a hint (0/3)</button>
       <div class="solution-area"><button class="pbtn danger" id="bugSolution">Reveal the fix</button></div>
     </aside>
     <section style="display:flex;flex-direction:column;min-height:0">
@@ -61,9 +63,9 @@ function renderBugDetail(root, bugId, openBug) {
         <div style="display:flex;flex-direction:column">
           <div id="bugEditorHost"></div>
           <div class="runbar">
-            <button class="pbtn primary" id="bugRun">▶ Run Code</button>
-            <button class="pbtn" id="bugValidate">✓ Validate Fix</button>
-            <button class="pbtn danger" id="bugStop">■ Stop</button>
+            <button class="pbtn primary" id="bugRun">Run Code</button>
+            <button class="pbtn" id="bugValidate">Validate Fix</button>
+            <button class="pbtn danger" id="bugStop">Stop</button>
           </div>
         </div>
         <div class="term" id="bugOut" aria-live="polite" style="max-height:180px;overflow:auto">Run the broken code first to see what goes wrong.</div>
@@ -80,9 +82,9 @@ function renderBugDetail(root, bugId, openBug) {
   btnHint.addEventListener("click", () => {
     if (hintsShown >= 3) { toast("All hints revealed"); return; }
     hintArea.insertAdjacentHTML("beforeend",
-      `<div class="hintbox"><div class="hint-body" style="padding-top:10px"><b>Hint ${hintsShown + 1}:</b> ${escapeHtml(bug.hints[hintsShown]).replace(/\n/g, "<br>")}</div></div>`);
+      `<div class="hintbox"><div class="hint-label">Hint ${hintsShown + 1} of 3</div><div class="hint-body">${escapeHtml(bug.hints[hintsShown]).replace(/\n/g, "<br>")}</div></div>`);
     hintsShown++;
-    btnHint.textContent = `💡 Get a hint (${hintsShown}/3)`;
+    btnHint.textContent = `Get a hint (${hintsShown}/3)`;
     progress.recordHintUse(bug.track);
     if (hintsShown === 3) btnHint.disabled = true;
   });
@@ -130,7 +132,7 @@ function renderBugDetail(root, bugId, openBug) {
       const actual = validation.results[0]?.actual ?? "";
       resultBox.innerHTML = `
         <div class="result-card fail" role="status">
-          <h3>❌ Still not fixed</h3>
+          <h3><span class="verdict">FAIL</span>Still not fixed</h3>
           Your program's output must match:<pre class="codeblock">${escapeHtml(bug.expected)}</pre>
           ${actual ? `Actual output:<pre class="codeblock">${escapeHtml(actual)}</pre>` : ""}
         </div>`;
@@ -140,9 +142,9 @@ function renderBugDetail(root, bugId, openBug) {
     const badges = evaluateBadges({ challenges: 60, lessons: 44 });
     resultBox.innerHTML = `
       <div class="result-card pass" role="status">
-        <h3>🎉 Bug fixed — the program behaves correctly now!</h3>
+        <h3><span class="verdict">PASS</span>Bug fixed — the program behaves correctly now</h3>
       </div>`;
     if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
-    for (const b of badges) toast(`${b.em} Badge unlocked: ${b.name}!`, true);
+    for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
   });
 }

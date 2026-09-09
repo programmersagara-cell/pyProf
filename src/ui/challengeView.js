@@ -21,13 +21,15 @@ export function renderChallenges(root, { openChallenge, currentId, filters }) {
   root.innerHTML = `
   <div class="page">
     <div class="view-head">
-      <h1>🏆 Coding Challenges</h1>
-      <p>${allChallenges.length} challenges validated by hidden test cases — any correct solution counts. Completed: ${doneCount}/${allChallenges.length}.</p>
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap" id="diffFilter" role="group" aria-label="Difficulty filter">
-        ${["All", "Beginner", "Intermediate", "Advanced"].map((d) =>
-          `<button class="pbtn${diff === d ? " primary" : ""}" data-diff="${d}">${d}</button>`).join("")}
+      <h1>Coding Challenges <span class="count-chip">${doneCount}/${allChallenges.length} solved</span></h1>
+      <p>${allChallenges.length} challenges validated by hidden test cases — any correct solution counts.</p>
+      <div class="view-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="diffFilter" role="group" aria-label="Difficulty filter">
+          ${["All", "Beginner", "Intermediate", "Advanced"].map((d) =>
+            `<button class="pbtn${diff === d ? " primary" : ""}" data-diff="${d}">${d}</button>`).join("")}
+        </div>
+        <div class="search-wrap"><input type="search" class="searchbox" id="chSearch" placeholder="Search challenges" aria-label="Search challenges"></div>
       </div>
-      <input type="search" class="searchbox" id="chSearch" placeholder="Search challenges…" aria-label="Search challenges">
     </div>
     <div class="grid" id="chGrid" role="list"></div>
   </div>`;
@@ -46,8 +48,8 @@ export function renderChallenges(root, { openChallenge, currentId, filters }) {
       tile.className = "tile" + (done ? " done" : "");
       tile.setAttribute("role", "listitem");
       tile.innerHTML = `
-        <span class="badge-pill ${difficultyClass(c.difficulty)}">${c.difficulty}</span>
-        <h3>${done ? "✅ " : ""}${escapeHtml(c.title)}</h3>
+        <span class="badge-pill ${difficultyClass(c.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${c.difficulty}</span>
+        <h3>${done ? `<span class="done-mark" aria-label="completed">[done]</span>` : ""}${escapeHtml(c.title)}</h3>
         <span class="meta-line">${escapeHtml(c.track)}</span>`;
       tile.addEventListener("click", () => openChallenge(c.id));
       grid.appendChild(tile);
@@ -74,16 +76,18 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
     <aside class="ch-side">
       <button class="crumb" id="chBack">← All challenges</button>
       <h1>${escapeHtml(ch.title)}</h1>
-      <span class="badge-pill ${difficultyClass(ch.difficulty)}">${ch.difficulty}</span>
-      <span class="badge-pill p">${escapeHtml(ch.track)}</span>
+      <div class="tile-row">
+        <span class="badge-pill ${difficultyClass(ch.difficulty)}"><span class="lvl-dots" aria-hidden="true"><i></i><i></i><i></i></span>${ch.difficulty}</span>
+        <span class="badge-pill p">${escapeHtml(ch.track)}</span>
+      </div>
       <div class="spec">${ch.brief}<ul>${ch.tasks.map((t) => `<li>${t}</li>`).join("")}</ul></div>
-      ${ch.requires ? `<div class="spec">⚠ Your code must use: ${ch.requires.map((r) => `<code>${escapeHtml(r)}</code>`).join(", ")}</div>` : ""}
-      ${ch.forbidden ? `<div class="spec">🚫 Your code must not use: ${ch.forbidden.map((r) => `<code>${escapeHtml(r)}</code>`).join(", ")}</div>` : ""}
+      ${ch.requires ? `<div class="constraint must"><b>Required:</b> your code must use ${ch.requires.map((r) => `<code>${escapeHtml(r)}</code>`).join(", ")}</div>` : ""}
+      ${ch.forbidden ? `<div class="constraint ban"><b>Not allowed:</b> your code must not use ${ch.forbidden.map((r) => `<code>${escapeHtml(r)}</code>`).join(", ")}</div>` : ""}
       <div class="spec">Sample inputs for <b>Run</b>: <code>${escapeHtml(Object.entries(ch.defaultInputs).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join("; ") || "(none)")}</code></div>
       <div id="hintArea"></div>
-      <button class="pbtn" id="btnHint" style="margin-top:10px">💡 Get a hint (0/3)</button>
+      <button class="pbtn" id="btnHint" style="margin-top:10px">Get a hint (0/3)</button>
       <div class="solution-area">
-        <button class="pbtn danger" id="btnSolution">Reveal full solution (-XP)</button>
+        <button class="pbtn danger" id="btnSolution">Reveal full solution (costs XP)</button>
       </div>
     </aside>
     <section style="display:flex;flex-direction:column;min-height:0">
@@ -95,9 +99,9 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
         <div style="display:flex;flex-direction:column">
           <div id="chEditorHost"></div>
           <div class="runbar">
-            <button class="pbtn primary" id="chRun">▶ Run (sample input)</button>
-            <button class="pbtn" id="chValidate">✓ Validate Solution</button>
-            <button class="pbtn danger" id="chStop">■ Stop</button>
+            <button class="pbtn primary" id="chRun">Run (sample input)</button>
+            <button class="pbtn" id="chValidate">Validate Solution</button>
+            <button class="pbtn danger" id="chStop">Stop</button>
           </div>
         </div>
         <div class="term" id="chOut" aria-live="polite" style="max-height:180px;overflow:auto">Run your solution with the sample input, then Validate.</div>
@@ -114,9 +118,9 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
     if (hintsShown >= 3) { toast("All hints revealed"); return; }
     const hint = ch.hints[hintsShown];
     hintArea.insertAdjacentHTML("beforeend",
-      `<div class="hintbox"><div class="hint-body" style="padding-top:10px"><b>Hint ${hintsShown + 1}:</b> ${escapeHtml(hint).replace(/\n/g, "<br>")}</div></div>`);
+      `<div class="hintbox"><div class="hint-label">Hint ${hintsShown + 1} of 3</div><div class="hint-body">${escapeHtml(hint).replace(/\n/g, "<br>")}</div></div>`);
     hintsShown++;
-    btnHint.textContent = `💡 Get a hint (${hintsShown}/3)`;
+    btnHint.textContent = `Get a hint (${hintsShown}/3)`;
     progress.recordHintUse(ch.track);
     if (hintsShown === 3) btnHint.disabled = true;
   });
@@ -172,7 +176,7 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
     const badges = evaluateBadges({ challenges: allChallenges.length, lessons: 44 });
     resultBox.innerHTML = resultCard(true, validation);
     if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
-    for (const b of badges) toast(`${b.em} Badge unlocked: ${b.name}!`, true);
+    for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
   }
 
   document.getElementById("chRun").addEventListener("click", doRun);
@@ -196,14 +200,14 @@ function renderRunResult(out, res, code) {
 
 function resultCard(pass, validation) {
   const rows = validation.results.map((r) => `
-    <li>${r.pass ? "✅" : "❌"} <b>${escapeHtml(r.name)}</b>
+    <li><span class="${r.pass ? "t-pass" : "t-fail"}">${r.pass ? "PASS" : "FAIL"}</span> <b>${escapeHtml(r.name)}</b>
       ${r.pass ? "" : `<br>expected: <code>${escapeHtml(r.expected)}</code><br>actual: <code>${escapeHtml(r.actual)}</code>`}
     </li>`).join("");
   const structural = validation.structural?.length
-    ? `<ul class="testlist">${validation.structural.map((s) => `<li>⚠ ${escapeHtml(s)}</li>`).join("")}</ul>` : "";
+    ? `<ul class="testlist">${validation.structural.map((s) => `<li><span class="t-fail">NOTE</span> ${escapeHtml(s)}</li>`).join("")}</ul>` : "";
   return `
     <div class="result-card ${pass ? "pass" : "fail"}" role="status">
-      <h3>${pass ? "🎉 All tests passed — challenge complete!" : "❌ Not passing yet"}</h3>
+      <h3><span class="verdict">${pass ? "PASS" : "FAIL"}</span>${pass ? "All tests passed — challenge complete" : "Not passing yet"}</h3>
       ${pass ? "" : "Different solutions are allowed — the hidden tests only check behaviour. Compare your output with the expected one below:"}
       <ul class="testlist">${rows}</ul>${structural}
     </div>`;

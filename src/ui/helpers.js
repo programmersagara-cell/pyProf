@@ -10,10 +10,14 @@ export function el(html) {
 }
 
 let toastTimer = null;
-export function toast(message, xp = false) {
+export function toast(message, kind = false) {
   const t = document.getElementById("toast");
+  if (!t) return;
+  // kind: true/"xp" = achievement, "err"/"error" = failure, otherwise neutral status.
+  const xp = kind === true || kind === "xp";
+  const err = kind === "err" || kind === "error";
   t.textContent = message;
-  t.className = "toast" + (xp ? " xp" : "");
+  t.className = "toast" + (xp ? " xp" : "") + (err ? " err" : "");
   t.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.hidden = true; }, xp ? 3500 : 2600);

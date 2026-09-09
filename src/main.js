@@ -25,7 +25,8 @@ const state = {
 /* ---------- theme ---------- */
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  document.getElementById("themeBtn").textContent = theme === "dark" ? "🌙" : "☀️";
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = theme === "dark" ? "Dark" : "Light";
   refreshEditorTheme();
 }
 function initTheme() {
@@ -41,12 +42,13 @@ function initTheme() {
   });
 }
 
-/* ---------- XP widget ---------- */
+/* ---------- XP widget: text-only instrument readout ---------- */
 function updateXpWidget() {
   const w = document.getElementById("xpWidget");
+  if (!w) return;
   const lvl = progress.level();
   const next = progress.nextLevel();
-  w.innerHTML = `<b>${lvl.name}</b> · ${progress.data.xp} XP${next ? ` → ${next.xp}` : " · MAX"} · 🔥${progress.data.streak.count}`;
+  w.innerHTML = `<b>${progress.data.xp} XP</b><span class="xp-sep">·</span>${lvl.name}<span class="xp-sep">·</span>day ${progress.data.streak.count}${next ? `<span class="xp-sep">·</span>${next.xp - progress.data.xp} to ${next.name}` : `<span class="xp-sep">·</span>MAX`}`;
   w.onclick = () => setView("analytics");
 }
 progress.onChange(updateXpWidget);
@@ -112,7 +114,7 @@ document.getElementById("modalOverlay").addEventListener("click", (e) => {
 document.getElementById("shortcutsBtn").addEventListener("click", showShortcuts);
 
 function showShortcuts() {
-  openModal("⌨ Keyboard Shortcuts", `
+  openModal("Keyboard Shortcuts", `
     <table class="kbd-table">
       <tr><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>Run code</td></tr>
       <tr><td><kbd>Ctrl</kbd> + <kbd>Space</kbd></td><td>Autocomplete</td></tr>
@@ -130,7 +132,7 @@ function boot() {
   overlay.className = "boot";
   overlay.setAttribute("role", "status");
   overlay.setAttribute("aria-live", "polite");
-  overlay.innerHTML = "<div class=\"logo\">PY</div><div class=\"bt\">Initializing Python Engine...</div><div class=\"bbar\"><div></div></div><div class=\"bsub\">Starting up...</div>";
+  overlay.innerHTML = "<div class=\"boot-mark\">Py</div><div class=\"bt\">Initializing Python Engine...</div><div class=\"bbar\"><div></div></div><div class=\"bsub\">Starting up...</div>";
   document.body.appendChild(overlay);
 
   // Determinate-feel progress: the bar creeps forward while Pyodide (~10MB
@@ -196,7 +198,7 @@ function boot() {
 
   // Add a skip button so users can dismiss the overlay immediately
   const skipBtn = document.createElement("button");
-  skipBtn.textContent = "Skip ▶";
+  skipBtn.textContent = "Continue to workspace";
   skipBtn.style.cssText = "margin-top:18px;background:var(--panel2);border:1px solid var(--border2);color:var(--text-dim);padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer;";
   skipBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -276,7 +278,7 @@ function boot() {
     overlay.querySelector(".bbar")?.remove();
     overlay.classList.add("boot-error");
     const bt = overlay.querySelector(".bt");
-    if (bt) bt.textContent = "⚠ Something went wrong during startup. Click to continue.";
+    if (bt) bt.textContent = "Startup error. Click anywhere to continue to the workspace.";
     setTimeout(removeOverlay, 4000);
     setView("workspace");
   }

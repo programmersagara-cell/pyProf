@@ -15,9 +15,9 @@ export function renderLessons(root, { openLesson, currentId }) {
   root.innerHTML = `
   <div class="page">
     <div class="view-head">
-      <h1>📚 Lessons</h1>
+      <h1>Lessons</h1>
       <p>${lessons.length} structured lessons from first print() to decorators — each with a live mini editor. Progress: ${doneCount}/${lessons.length} completed.</p>
-      <input type="search" class="searchbox" id="lessonSearch" placeholder="Search lessons… (e.g. loops, dict)" aria-label="Search lessons">
+      <div class="search-wrap"><input type="search" class="searchbox" id="lessonSearch" placeholder="Search lessons (e.g. loops, dict)" aria-label="Search lessons"></div>
     </div>
     <div id="lessonGrid"></div>
   </div>`;
@@ -39,7 +39,7 @@ export function renderLessons(root, { openLesson, currentId }) {
         tile.setAttribute("role", "listitem");
         tile.innerHTML = `
           <span class="badge-pill p">${l.num}</span>
-          <h3>${done ? "✅ " : ""}${escapeHtml(l.title)}</h3>
+          <h3>${done ? `<span class="done-mark" aria-label="completed">[done]</span>` : ""}${escapeHtml(l.title)}</h3>
           <span class="meta-line">${track}${done ? " · completed" : ""}</span>`;
         tile.addEventListener("click", () => openLesson(l.id));
         g.appendChild(tile);
@@ -70,11 +70,11 @@ export function renderLessonDetail(root, lessonId, openLesson) {
     <div class="sec"><h2>Common Mistakes</h2><div class="mistake">
       ${lesson.mistakes.map((m) => `
         <div>
-          <div class="lbl wrong-l">❌ Wrong${m.note ? ` — ${escapeHtml(m.note)}` : ""}</div>
+          <div class="lbl wrong-l">Wrong${m.note ? ` — ${escapeHtml(m.note)}` : ""}</div>
           <pre class="codeblock wrong">${escapeHtml(m.wrong)}</pre>
         </div>
         <div>
-          <div class="lbl right-l">✓ Correct</div>
+          <div class="lbl right-l">Correct</div>
           <pre class="codeblock right">${escapeHtml(m.right)}</pre>
         </div>`).join("")}
     </div></div>
@@ -83,9 +83,9 @@ export function renderLessonDetail(root, lessonId, openLesson) {
       <p class="exp-text">Modify the code and run it — this is a real Python editor.</p>
       <div class="mini-editor"><div id="miniHost"></div>
         <div class="mini-bar">
-          <button class="pbtn primary" id="miniRun">▶ Run</button>
+          <button class="pbtn primary" id="miniRun">Run</button>
           <button class="pbtn" id="miniReset">Reset</button>
-          <button class="pbtn" id="miniComplete">✓ Mark lesson complete</button>
+          <button class="pbtn" id="miniComplete">Mark lesson complete</button>
         </div>
         <div class="mini-out" id="miniOut" aria-live="polite">Output…</div>
       </div>

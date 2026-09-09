@@ -15,59 +15,61 @@ export function renderAnalytics(root, { openLesson, openChallenge }) {
   const topics = topicDifficulty();
   const lvl = progress.level();
   const next = progress.nextLevel();
+  const unlockedCount = BADGES.filter((b) => progress.data.badges.includes(b.id.trim())).length;
 
   root.innerHTML = `
   <div class="page">
-    <div class="view-head"><h1>📊 Your Learning Progress</h1>
-      <p>${lvl.name}${next ? ` — ${progress.levelProgress()}% to ${next.name} (${next.xp - s.xp} XP to go)` : " — max level!"}</p>
-      <div class="bar" style="max-width:420px;margin-top:8px"><div style="width:${progress.levelProgress()}%;background:var(--accent)"></div></div>
+    <div class="view-head"><h1>Progress <span class="count-chip">Level ${escapeHtml(lvl.name)}</span></h1>
+      <p>${next ? `${progress.levelProgress()}% to ${escapeHtml(next.name)} — ${next.xp - s.xp} XP to go` : "Max level reached."} Streaks reward daily practice.</p>
+      <div class="bar" style="max-width:420px;margin-top:8px" role="progressbar" aria-valuenow="${progress.levelProgress()}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress to next level"><div style="width:${progress.levelProgress()}%"></div></div>
     </div>
 
-    <div class="statgrid">
+    <div class="statgrid" role="table" aria-label="Learning totals">
       <div class="stat"><div class="num">${s.xp}</div><div class="lbl">Total XP</div></div>
       <div class="stat"><div class="num">${s.lessons}</div><div class="lbl">Lessons done</div></div>
       <div class="stat"><div class="num">${s.challenges}</div><div class="lbl">Challenges solved</div></div>
       <div class="stat"><div class="num">${s.debugs}</div><div class="lbl">Bugs fixed</div></div>
       <div class="stat"><div class="num">${s.successRate}%</div><div class="lbl">Success rate</div></div>
       <div class="stat"><div class="num">${s.avgAttempts}</div><div class="lbl">Avg attempts / challenge</div></div>
-      <div class="stat"><div class="num">${s.streak}🔥</div><div class="lbl">Current streak (best ${s.bestStreak})</div></div>
+      <div class="stat"><div class="num">${s.streak}d<span style="font-size:12px;color:var(--text-faint)"> / best ${s.bestStreak}d</span></div><div class="lbl">Current streak</div></div>
       <div class="stat"><div class="num">${fmtTime(s.timeSpentMin * 60)}</div><div class="lbl">Time learning</div></div>
     </div>
 
-    <h2 style="margin-top:30px;font-size:16px">Track completion</h2>
+    <h2 class="sec-title">Track completion</h2>
     ${Object.entries(tracks).map(([track, pct]) => `
       <div class="progress-row">
-        <div class="plabel"><span>${escapeHtml(track)}</span><span>${pct}%</span></div>
-        <div class="bar"><div style="width:${pct}%"></div></div>
+        <div class="plabel"><span>${escapeHtml(track)}</span><span>${pct}% complete</span></div>
+        <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(track)} completion"><div style="width:${pct}%"></div></div>
       </div>`).join("")}
 
-    <h2 style="margin-top:30px;font-size:16px">🧠 Smart recommendations</h2>
+    <h2 class="sec-title">Recommendations</h2>
     ${recs.map((r) => `
       <div class="reco">
-        <div>⚠ ${r.warning}</div>
+        <div class="reco-head">${r.warning}</div>
         <ol style="margin:8px 0 0 18px">${r.steps.map((st) => `<li>${st}</li>`).join("")}</ol>
         ${r.openLesson ? `<button class="pbtn" data-goto="${escapeHtml(r.openLesson)}" style="margin-top:8px">Review the lesson →</button>` : ""}
       </div>`).join("")}
 
-    ${topics.length ? `<h2 style="margin-top:30px;font-size:16px">Topic performance</h2>
-      <table class="vartable" style="max-width:520px"><thead><tr><th>Topic</th><th>Solved</th><th>Failed</th><th>Hints</th></tr></thead><tbody>
-      ${topics.map((t) => `<tr><td class="vt-name">${escapeHtml(t.topic)}</td><td class="vt-val">${t.solved || 0}</td><td class="vt-val" style="color:${(t.fails || 0) > 0 ? "var(--orange)" : "inherit"}">${t.fails || 0}</td><td class="vt-val">${t.hintUses || 0}</td></tr>`).join("")}
+    ${topics.length ? `<h2 class="sec-title">Topic performance</h2>
+      <table class="vartable" style="max-width:560px"><thead><tr><th>Topic</th><th>Solved</th><th>Failed</th><th>Hints</th></tr></thead><tbody>
+      ${topics.map((t) => `<tr><td class="vt-name">${escapeHtml(t.topic)}</td><td class="vt-val">${t.solved || 0}</td><td class="vt-val">${t.fails || 0} ${(t.fails || 0) > 0 ? "— needs work" : ""}</td><td class="vt-val">${t.hintUses || 0}</td></tr>`).join("")}
       </tbody></table>` : ""}
 
-    <h2 style="margin-top:30px;font-size:16px">🏅 Badges (${BADGES.filter((b) => progress.data.badges.includes(b.id.trim())).length}/${BADGES.length})</h2>
+    <h2 class="sec-title">Badges <span class="count-chip">${unlockedCount}/${BADGES.length}</span></h2>
     <div class="badge-grid">
       ${BADGES.map((b) => {
         const unlocked = progress.data.badges.includes(b.id.trim());
+        const initials = escapeHtml(b.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase());
         return `<div class="badge-card ${unlocked ? "unlocked" : ""}" title="${escapeHtml(b.desc)}">
-          <span class="em">${b.em}</span>
+          <span class="medal" aria-hidden="true">${initials}</span>
           <div class="bn">${escapeHtml(b.name)}</div>
           <div class="bd">${escapeHtml(b.desc)}</div>
-          <div class="bd" style="color:${unlocked ? "var(--green)" : "var(--text-dim)"}">${unlocked ? "Unlocked" : "Locked"}</div>
+          <div class="bstate">${unlocked ? "Unlocked" : "Locked"}</div>
         </div>`;
       }).join("")}
     </div>
 
-    ${progress.data.events.length ? `<h2 style="margin-top:30px;font-size:16px">Recent activity</h2>
+    ${progress.data.events.length ? `<h2 class="sec-title">Recent activity</h2>
       <ul style="list-style:none;font-size:13px;color:var(--text-dim)">
         ${progress.data.events.slice(0, 8).map((e) => `<li>${escapeHtml(e.text)} <span class="meta">· ${new Date(e.date).toLocaleString()}</span></li>`).join("")}
       </ul>` : ""}

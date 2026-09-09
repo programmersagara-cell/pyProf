@@ -14,7 +14,7 @@ let lastResult = null;
 
 export function getWorkspaceEditor() { return cm; }
 
-const DEFAULT_CODE = `# PYTHON·LAB — write Python here and press ▶ Run Code
+const DEFAULT_CODE = `# Write Python here, then press Run (Ctrl+Enter)
 name = "Maria"
 age = 21
 scores = [90, 85, 95]
@@ -28,30 +28,30 @@ export function renderWorkspace(root) {
   root.innerHTML = `
   <div class="view">
     <div class="ws-tabbar" role="tablist" aria-label="Workspace panels">
-      <button role="tab" data-tab="editor" class="active" aria-selected="true">⌨ Code</button>
-      <button role="tab" data-tab="vars">🗂 Variables</button>
-      <button role="tab" data-tab="term">🖥 Output</button>
+      <button role="tab" data-tab="editor" class="active" aria-selected="true">Code</button>
+      <button role="tab" data-tab="vars" aria-selected="false">Variables</button>
+      <button role="tab" data-tab="term" aria-selected="false">Output</button>
     </div>
     <div class="ws">
       <section class="panel ws-editor ws-panel active" data-panel="editor" aria-label="Code editor">
         <div class="panel-head">
-          <span class="panel-title">main.py</span>
+          <span class="panel-title">Editor <span class="fname">main.py</span></span>
           <span class="spacer"></span>
-          <button class="pbtn" id="btnFormat" title="Basic code formatting">Tidy</button>
+          <button class="pbtn" id="btnFormat" title="Normalize indentation (4 spaces per level)">Tidy</button>
           <button class="pbtn" id="btnClear" title="Clear editor">Clear</button>
           <button class="pbtn danger" id="btnReset" title="Reset code to default">Reset code</button>
         </div>
         <div class="panel-body">
           <div class="editor-host" id="editorHost"></div>
           <div class="runbar">
-            <button class="pbtn primary" id="btnRun" disabled title="Python engine is still loading…">Loading Python… <small>Ctrl+Enter</small></button>
+            <button class="pbtn primary" id="btnRun" disabled title="Python engine is still loading…">Loading Python… <span class="kbd">Ctrl+Enter</span></button>
             <button class="pbtn" id="btnRetryEngine" hidden title="Retry loading the Python engine">Retry</button>
-            <button class="pbtn danger" id="btnStop">■ Stop</button>
-            <button class="pbtn" id="btnResetEnv" title="Restart the Python engine">↻ Reset Environment</button>
+            <button class="pbtn danger" id="btnStop">Stop</button>
+            <button class="pbtn" id="btnResetEnv" title="Restart the Python engine">Reset Environment</button>
             <span class="status-dot" id="statusDot" aria-hidden="true"></span>
             <span class="status-text" id="statusText">Initializing Python Engine…</span>
             <span class="spacer" style="flex:1"></span>
-            <button class="pbtn" id="btnSave" title="Save code locally (Ctrl+S)">💾 Save</button>
+            <button class="pbtn" id="btnSave" title="Save code locally (Ctrl+S)">Save</button>
           </div>
         </div>
       </section>
@@ -62,7 +62,7 @@ export function renderWorkspace(root) {
           <span class="panel-title" id="varCount"></span>
         </div>
         <div class="panel-body" id="varBody">
-          <div class="empty-hint"><span class="big">🗂</span>Run your code to inspect the variables it creates.</div>
+          <div class="empty-hint"><span class="empty-title">No variables inspected yet</span>Run your code and the variables it creates appear here as a table.</div>
         </div>
       </section>
       <section class="panel ws-panel" data-panel="term" aria-label="Output terminal">
@@ -72,7 +72,7 @@ export function renderWorkspace(root) {
           <button class="pbtn" id="btnClearTerm">Clear</button>
         </div>
         <div class="panel-body term" id="termBody" aria-live="polite">
-          <span class="meta">Program output appears here. Press ▶ Run Code or Ctrl+Enter.</span>
+          <span class="meta">Program output appears here. Press Run or Ctrl+Enter.</span>
         </div>
       </section>
     </div>
@@ -120,7 +120,7 @@ export function renderWorkspace(root) {
     if (run) {
       if (state === "ready" || state === "idle") {
         run.disabled = false;
-        run.innerHTML = "&#9654; Run Code <small>Ctrl+Enter</small>";
+        run.innerHTML = `Run <span class="kbd">Ctrl+Enter</span>`;
         run.title = "Run Python code (Ctrl+Enter)";
       } else if (state === "running" || state === "restarting") {
         run.disabled = true;
@@ -131,7 +131,7 @@ export function renderWorkspace(root) {
         run.title = message || "Python engine failed to load";
       } else {
         run.disabled = true;
-        run.innerHTML = "Loading Python… <small>Ctrl+Enter</small>";
+        run.innerHTML = `Loading Python… <span class="kbd">Ctrl+Enter</span>`;
         run.title = message || "Python engine is still loading…";
       }
     }
@@ -146,7 +146,7 @@ export function renderWorkspace(root) {
     const dot = document.getElementById("statusDot");
     if (text) text.textContent = s.message || s.state;
     if (dot) dot.className = "status-dot" + (s.state === "ready" || s.state === "idle" ? " ok" : s.state === "error" ? " err" : " busy");
-    if (run && (s.state === "ready" || s.state === "idle")) { run.disabled = false; run.innerHTML = "&#9654; Run Code <small>Ctrl+Enter</small>"; }
+    if (run && (s.state === "ready" || s.state === "idle")) { run.disabled = false; run.innerHTML = `Run <span class="kbd">Ctrl+Enter</span>`; }
     if (retry) retry.hidden = (s.state !== "error");
   })();
 
@@ -197,9 +197,9 @@ function renderResult(res) {
   let html = "";
   if (res.output) html += `<span class="out">${escapeHtml(res.output)}</span>\n`;
   if (res.ok) {
-    html += `<hr><span class="meta">✓ Program executed successfully</span>\n<span class="meta">Execution time: ${(res.time || 0).toFixed(2)} seconds</span>`;
+    html += `<hr><span class="meta">Finished in ${(res.time || 0).toFixed(2)}s — exit 0</span>`;
   } else if (res.stopped) {
-    html += `<hr><span class="err-t">■ Execution stopped by user</span>`;
+    html += `<hr><span class="err-t">Stopped by user</span>`;
   } else if (res.error) {
     const ex = explainError(res.error, res.code || "");
     html += renderErrorHTML(ex);
@@ -213,7 +213,7 @@ function renderVariables() {
   const count = document.getElementById("varCount");
   if (count) count.textContent = `${lastVariables.length} variable${lastVariables.length === 1 ? "" : "s"}`;
   if (!lastVariables.length) {
-    body.innerHTML = `<div class="empty-hint"><span class="big">🗂</span>No variables yet. Create some and run!</div>`;
+    body.innerHTML = `<div class="empty-hint"><span class="empty-title">No variables in scope</span>Run the program and each top-level name appears here with its type and value.</div>`;
     return;
   }
   let html = `<table class="vartable"><thead><tr><th>Variable</th><th>Type</th><th>Value</th></tr></thead><tbody>`;
