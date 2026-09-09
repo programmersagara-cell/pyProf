@@ -228,3 +228,7 @@ try {
   if (overlay) overlay.remove();
   setView("workspace");
 }
+
+// Signal that the app has loaded successfully — prevents the fallback
+// "Failed to load the application" message in index.html from showing.
+window.__pythonLabLoaded = true;
