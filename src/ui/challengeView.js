@@ -131,15 +131,32 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
 
   async function doRun() {
     const out = document.getElementById("chOut");
+    const runBtn = document.getElementById("chRun");
+    const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+    if (st.state === "error") { out.textContent = "Python engine failed to load: " + (st.message || "") + " Press Reset Environment in the Workspace, then retry."; return; }
+    if (!engine.ready) {
+      out.textContent = "Waiting for Python engine… (still loading)";
+      const ok = await engine.waitForReady(90000);
+      if (!ok) { out.textContent = "Python engine is still loading. Please wait for Python Ready, then press Run again."; return; }
+    }
     out.textContent = "Running…";
+    if (runBtn) { runBtn.disabled = true; }
     const code = cm.getValue();
     const res = await runExample(code, ch.defaultInputs);
+    if (runBtn) { runBtn.disabled = false; }
     renderRunResult(out, res, code);
   }
 
   async function doValidate() {
     const resultBox = document.getElementById("chResult");
     const out = document.getElementById("chOut");
+    const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+    if (st.state === "error") { out.textContent = "Python engine failed to load: " + (st.message || ""); return; }
+    if (!engine.ready) {
+      out.textContent = "Waiting for Python engine… (still loading)";
+      const ok = await engine.waitForReady(90000);
+      if (!ok) { out.textContent = "Python engine is still loading. Please wait, then Validate again."; return; }
+    }
     out.textContent = "Validating against hidden test cases…";
     const code = cm.getValue();
     const validation = await runTests(ch, code);
@@ -165,6 +182,11 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
 }
 
 function renderRunResult(out, res, code) {
+  if (!out) return;
+  if (res.notReady) {
+    out.textContent = res.error || "Python engine is still loading. Please wait, then press Run again.";
+    return;
+  }
   if (res.ok) {
     out.innerHTML = `${escapeHtml(res.output)}<hr><span class="meta">✓ Ran in ${res.time.toFixed(2)}s — now press Validate to check against hidden tests.</span>`;
   } else if (res.error) {

@@ -2,10 +2,12 @@
  * Runs real Python via Pyodide/WASM off the main thread.
  * A run that exceeds its timeout causes the worker to be terminated by the
  * engine (see pythonEngine.js), which guarantees the browser never freezes
- * on infinite loops. */
+ * on infinite loops.
+ * GitHub Pages safe: no relative fetch, only versioned CDN with fallback. */
 
 let pyodide = null;
 let ready = false;
+let cdnUsed = "";
 
 const EXTRACT_VARS = `
 import json as _pl_json, types as _pl_types
@@ -61,13 +63,35 @@ def _pl_input(prompt=""):
 _pl_builtins.input = _pl_input
 `;
 
-async function boot() {
-  importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js");
-  self.postMessage({ type: "boot", stage: "loading-pyodide" });
-  pyodide = await loadPyodide({
-    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
-  });
-  self.postMessage({ type: "boot", stage: "ready" });
+async function boot(requestedVersion) {
+  const version = requestedVersion || "v0.26.2";
+  const cdns = [
+    "https://cdn.jsdelivr.net/pyodide/" + version + "/full/",
+    "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
+    "https://cdn.pyodide.org/v0.26.2/full/"
+  ];
+  let lastErr = null;
+  for (const base of cdns) {
+    try {
+      self.postMessage({ type: "boot", stage: "loading-pyodide" });
+      // Fresh importScripts per attempt (a failed one leaves no usable global).
+      try { importScripts(base + "pyodide.js"); } catch (e) { throw new Error("Could not download pyodide.js from " + base + " (" + String((e && e.message) || e) + ")"); }
+      if (typeof loadPyodide !== "function") throw new Error("pyodide.js loaded but loadPyodide() missing (" + base + ")");
+      pyodide = await loadPyodide({ indexURL: base });
+      cdnUsed = base;
+      break;
+    } catch (err) {
+      lastErr = err;
+      pyodide = null;
+      // Try next CDN mirror.
+    }
+  }
+  if (!pyodide) throw lastErr || new Error("Could not load the Pyodide runtime from any CDN. Check your connection.");
+  self.postMessage({ type: "boot", stage: "boot-python" });
+  // Smoke test: runtime must actually execute before we claim ready.
+  const probe = await pyodide.runPythonAsync("2 + 3");
+  if (probe !== 5) throw new Error("Pyodide loaded but failed its self-check.");
+  self.postMessage({ type: "boot", stage: "verifying" });
   ready = true;
 }
 
@@ -83,12 +107,14 @@ function runPython(code) {
 self.onmessage = async (e) => {
   const msg = e.data;
   if (msg.type === "init") {
+    if (ready && pyodide) { self.postMessage({ type: "init-ok", cdn: cdnUsed }); return; }
     try {
-      await boot();
+      await boot(msg.version);
       // Prepare the sandbox: friendly input(), traceback trimming.
       await runPython(FRIENDLY_INPUT);
-      self.postMessage({ type: "init-ok" });
+      self.postMessage({ type: "init-ok", cdn: cdnUsed });
     } catch (err) {
+      ready = false;
       self.postMessage({ type: "init-fail", error: String(err && err.message || err) });
     }
     return;

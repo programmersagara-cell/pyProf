@@ -128,15 +128,12 @@ function showShortcuts() {
 function boot() {
   const overlay = document.createElement("div");
   overlay.className = "boot";
-  overlay.innerHTML = `
-    <div class="logo">🐍</div>
-    <div class="bt">PYTHON·LAB — starting the Python engine…</div>
-    <div class="bbar"><div></div></div>`;
+  overlay.innerHTML = "<div class=\"logo\">PY</div><div class=\"bt\">Initializing Python Engine...</div><div class=\"bbar\"><div></div></div>";
   document.body.appendChild(overlay);
 
-  // Hard fallback: never leave the overlay up more than 6 seconds, no matter what.
-  // Set this FIRST before any other code, so even if initTheme/updateXpWidget throw,
-  // the overlay will always be removed.
+  // Boot overlay dismissal is ENGINE-DRIVEN (not a blind timer):
+  // the overlay stays until the Python runtime is ready or has failed.
+  // A 120s safety net only fires if the engine never settles (tab frozen etc.).
   let overlayRemoved = false;
   function removeOverlay() {
     if (overlayRemoved) return;
@@ -144,11 +141,19 @@ function boot() {
     clearTimeout(fallbackTimer);
     overlay.style.opacity = "0";
     setTimeout(() => overlay.remove(), 450);
-    // Always render the workspace when the overlay is removed,
-    // even if engine.init() never resolved or rejected.
+    // Always render the workspace when the overlay is removed.
     setView("workspace");
   }
-  const fallbackTimer = setTimeout(removeOverlay, 6000);
+  const fallbackTimer = setTimeout(() => {
+    if (!engine.ready && engine.getStatus && engine.getStatus().state !== "error") {
+      const bt = overlay.querySelector(".bt");
+      if (bt) bt.textContent = "Still loading Python… (large download on slow networks — please wait)";
+      // Give it another 60s instead of dropping the user into a broken state.
+      setTimeout(removeOverlay, 60000);
+    } else {
+      removeOverlay();
+    }
+  }, 120000);
 
   // Click-to-dismiss: user can skip waiting
   overlay.style.cursor = "pointer";
@@ -175,26 +180,62 @@ function boot() {
 
     engine.on("boot", (stage) => {
       const bt = overlay.querySelector(".bt");
-      if (bt) bt.textContent =
-        stage === "loading-pyodide" ? "PYTHON·LAB — downloading Python (WebAssembly)…" : "PYTHON·LAB — preparing sandbox…";
+      if (!bt) return;
+      const text = typeof stage === "string" ? stage : (stage && stage.stage) || stage;
+      if (text === "loading-pyodide") bt.textContent = "Loading Python Runtime… (downloading WebAssembly)";
+      else if (text === "boot-python") bt.textContent = "Initializing Python Engine…";
+      else if (text === "verifying") bt.textContent = "Verifying Python runtime…";
+      else bt.textContent = "Preparing sandbox…";
     });
 
+    engine.on("status", (s) => {
+      if (!s) return;
+      const bt = overlay.querySelector(".bt");
+      if (s.state === "error" && bt) bt.textContent = s.message || "Python engine failed to load.";
+      else if (s.state === "loading" && bt && s.message) bt.textContent = s.message;
+      else if (s.state === "restarting" && bt) bt.textContent = s.message || "Restarting Python engine…";
+    });
+
+    function bootDone() {
+      // Engine finished booting (ready OR failed): dismiss overlay, show app.
+      removeOverlay();
+      const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+      if (st.state === "ready") toast("Python Ready - happy coding!");
+      else if (st.state === "error") toast("Python engine failed to load - check connection. Press Retry in the Workspace.", false);
+    }
+
     engine.init()
-      .then(() => {
-        removeOverlay();
-        toast("Python engine ready — happy coding! 🐍");
-      })
-      .catch((err) => {
-        // Surface a clear message, then auto-dismiss so the UI is always reachable.
+      .then(bootDone, (err) => {
+        // Surface a persistent error INSIDE the app shell (with Retry),
+        // instead of hanging on the boot overlay forever.
+        console.error("[python-lab] engine boot failed:", err);
         overlay.querySelector(".bbar")?.remove();
         overlay.classList.add("boot-error");
         const bt = overlay.querySelector(".bt");
-        if (bt) bt.textContent =
-          "⚠ Could not load the Python engine (offline or CDN blocked). Check your connection and reload.";
-        // Auto-dismiss after 4s (or immediately if user clicks)
-        setTimeout(removeOverlay, 4000);
-        toast("⚠ Python engine failed to load — check your internet connection.", false);
-        console.error("[python-lab] engine boot failed:", err);
+        if (bt) bt.textContent = "Could not load the Python engine (offline or CDN blocked). Check your connection, then press Retry below.";
+        let retryBtn = overlay.querySelector("#bootRetry");
+        if (!retryBtn) {
+          retryBtn = document.createElement("button");
+          retryBtn.id = "bootRetry";
+          retryBtn.textContent = "Retry loading Python";
+          retryBtn.style.cssText = "margin-top:14px;background:var(--accent);color:#111;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;";
+          retryBtn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            retryBtn.disabled = true;
+            retryBtn.textContent = "Retrying…";
+            engine.retry().then(bootDone, (err2) => {
+              console.error("[python-lab] engine retry failed:", err2);
+              const st = engine.getStatus ? engine.getStatus() : {};
+              if (bt) bt.textContent = "Still failing: " + (st.message || String((err2 && err2.message) || err2));
+              retryBtn.disabled = false;
+              retryBtn.textContent = "Retry loading Python";
+            });
+          });
+          overlay.appendChild(retryBtn);
+        }
+        // Auto-continue to the app after 12s so the UI is always reachable.
+        setTimeout(removeOverlay, 12000);
+        toast("Python engine failed to load - check your internet connection.", false);
       });
   } catch (err) {
     // If initTheme/updateXpWidget/engine.init threw synchronously, still show the UI

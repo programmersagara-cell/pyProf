@@ -62,7 +62,7 @@ export function renderAnalytics(root, { openLesson, openChallenge }) {
           <span class="em">${b.em}</span>
           <div class="bn">${escapeHtml(b.name)}</div>
           <div class="bd">${escapeHtml(b.desc)}</div>
-          <div class="bd" style="color:${unlocked ? "var(--green)" : "var(--text-faint)"}">${unlocked ? "Unlocked" : "Locked"}</div>
+          <div class="bd" style="color:${unlocked ? "var(--green)" : "var(--text-dim)"}">${unlocked ? "Unlocked" : "Locked"}</div>
         </div>`;
       }).join("")}
     </div>

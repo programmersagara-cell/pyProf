@@ -94,9 +94,18 @@ function renderBugDetail(root, bugId, openBug) {
 
   async function doRun() {
     const out = document.getElementById("bugOut");
+    if (!out) return;
+    const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+    if (st.state === "error") { out.textContent = "Python engine failed to load: " + (st.message || ""); return; }
+    if (!engine.ready) {
+      out.textContent = "Waiting for Python engine… (still loading)";
+      const ok = await engine.waitForReady(90000);
+      if (!ok) { out.textContent = "Python engine is still loading. Please wait, then press Run again."; return; }
+    }
     out.textContent = "Running…";
     const code = cm.getValue();
     const res = await engine.run(code);
+    if (res.notReady) { out.textContent = res.error; return; }
     if (res.ok) {
       out.innerHTML = `${escapeHtml(res.output)}<hr><span class="meta">✓ Ran in ${res.time.toFixed(2)}s</span>`;
     } else if (res.error) {

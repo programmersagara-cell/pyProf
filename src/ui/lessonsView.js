@@ -65,7 +65,7 @@ export function renderLessonDetail(root, lessonId, openLesson) {
     <div class="sec"><h2>Explanation</h2><div class="exp-text">${lesson.explanation}</div></div>
     <div class="sec"><h2>Syntax</h2><pre class="codeblock">${escapeHtml(lesson.syntax)}</pre></div>
     <div class="sec"><h2>Example</h2><pre class="codeblock">${escapeHtml(lesson.example)}</pre>
-      <pre class="codeblock" style="border-style:dashed"><span style="color:#5b6673"># Expected output</span>\n${escapeHtml(lesson.expectedOutput)}</pre></div>
+      <pre class="codeblock" style="border-style:dashed"><span class="code-comment"># Expected output</span>\n${escapeHtml(lesson.expectedOutput)}</pre></div>
 
     <div class="sec"><h2>Common Mistakes</h2><div class="mistake">
       ${lesson.mistakes.map((m) => `
@@ -104,9 +104,18 @@ export function renderLessonDetail(root, lessonId, openLesson) {
   const mini = createPythonEditor(document.getElementById("miniHost"), lesson.starter, { height: 220 });
   document.getElementById("miniRun").addEventListener("click", async () => {
     const out = document.getElementById("miniOut");
+    if (!out) return;
+    const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
+    if (st.state === "error") { out.textContent = "Python engine failed to load: " + (st.message || ""); return; }
+    if (!engine.ready) {
+      out.textContent = "Waiting for Python engine… (still loading)";
+      const ok = await engine.waitForReady(90000);
+      if (!ok) { out.textContent = "Python engine is still loading. Please wait, then press Run again."; return; }
+    }
     out.textContent = "Running…";
     const code = mini.getValue();
     const res = await engine.run(code);
+    if (res.notReady) { out.textContent = res.error; return; }
     if (res.ok) {
       out.innerHTML = `${escapeHtml(res.output)}<span class="meta">\n✓ ${res.time.toFixed(2)}s</span>`;
     } else if (res.error) {
