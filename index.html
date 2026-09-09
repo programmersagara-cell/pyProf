@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="PYTHON·LAB — The In-Browser Python Learning Workbench. Write and run real Python in your browser.">
+<title>PYTHON·LAB — Interactive Python Learning Workbench</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/neo.min.css">
+<link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+<a class="skip-link" href="#viewRoot">Skip to content</a>
+
+<header class="topbar" role="banner">
+  <button class="brand" id="brandHome" aria-label="PYTHON·LAB home">
+    <span class="brand-snake" aria-hidden="true">🐍</span>
+    <span class="brand-text">PYTHON<i>·</i>LAB</span>
+  </button>
+  <nav class="mainnav" id="mainNav" role="navigation" aria-label="Main navigation">
+    <button class="navbtn active" data-view="workspace" title="Workspace (1)">⌨ Workspace</button>
+    <button class="navbtn" data-view="lessons" title="Lessons (2)">📚 Lessons</button>
+    <button class="navbtn" data-view="challenges" title="Challenges (3)">🏆 Challenges</button>
+    <button class="navbtn" data-view="debugging" title="Debugging (4)">🐛 Debugging</button>
+    <button class="navbtn" data-view="cheatsheet" title="Cheat Sheet (5)">📖 Cheat Sheet</button>
+    <button class="navbtn" data-view="analytics" title="Progress (6)">📊 Progress</button>
+    <button class="navbtn" data-view="history" title="History (7)">🕘 History</button>
+  </nav>
+  <div class="topbar-right">
+    <div class="xp-widget" id="xpWidget" aria-live="polite" title="XP and level"></div>
+    <button class="iconbtn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">⌘</button>
+    <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle dark or light theme">🌙</button>
+  </div>
+</header>
+
+<main id="viewRoot" role="main">
+  <!-- Fallback message if JS fails to load -->
+  <noscript>
+    <div class="boot fallback-boot" style="cursor:default">
+      <div class="logo">🐍</div>
+      <div class="bt" style="color:var(--orange);font-size:15px;max-width:480px;text-align:center;padding:0 20px">
+        <b>JavaScript is required</b><br><br>
+        PYTHON·LAB runs entirely in your browser using JavaScript and WebAssembly.<br>
+        Please enable JavaScript and reload this page.
+      </div>
+    </div>
+  </noscript>
+  <div id="jsFallback" class="boot fallback-boot" style="display:none">
+    <div class="logo">🐍</div>
+    <div class="bt" style="color:var(--orange);font-size:15px;max-width:480px;text-align:center;padding:0 20px">
+      <b>Failed to load the application</b><br><br>
+      The JavaScript modules could not be loaded. This usually happens when opening the page directly from your computer (file://) instead of through a web server.<br><br>
+      <b>To fix:</b> Use a local web server, or deploy to GitHub Pages / Vercel / Netlify.
+    </div>
+    <button onclick="location.reload()" style="margin-top:18px;background:var(--accent);color:#111;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Reload page</button>
+  </div>
+</main>
+
+<!-- Run status toast -->
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- Generic modal -->
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">Modal</h2>
+      <button class="iconbtn" id="modalClose" aria-label="Close dialog (Escape)">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- CodeMirror scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/python-hint.min.js"></script>
+<script>
+  // If main.js module fails to load, show the fallback message
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (!window.__pythonLabLoaded) {
+        document.getElementById('jsFallback').style.display = 'flex';
+        // Remove any stuck boot overlay
+        var overlay = document.querySelector('.boot:not(.fallback-boot)');
+        if (overlay) overlay.remove();
+      }
+    }, 3000);
+  });
+</script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

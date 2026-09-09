@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PYTHON·LAB — Smoke Tests</title>
+<style>
+  body{font-family:Consolas,monospace;background:#0d1117;color:#e6edf3;padding:24px}
+  h1{font-size:18px}
+  .pass{color:#3fb950} .fail{color:#f85149}
+  pre{background:#151b23;padding:8px;border-radius:6px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>🐍 PYTHON·LAB smoke tests</h1>
+<p>Open this page while the app is served over HTTP. Pyodide loads from the CDN.</p>
+<div id="results"></div>
+<script type="module">
+const results = document.getElementById("results");
+function log(name, ok, detail = "") {
+  results.insertAdjacentHTML("beforeend",
+    `<p class="${ok ? "pass" : "fail"}">${ok ? "✅" : "❌"} ${name}${detail ? ` — <span style="color:#8b98a9">${detail}</span>` : ""}</p>`);
+}
+function assert(name, cond, detail) { log(name, !!cond, detail); }
+
+const { engine } = await import("../src/engine/pythonEngine.js");
+const { normalizeOutput, structuralCheck, outputMatches } = await import("../src/validation/validator.js");
+const { explainError } = await import("../src/engine/errorHandler.js");
+const { store } = await import("../src/progress/store.js");
+const { history } = await import("../src/history/history.js");
+const { progress } = await import("../src/progress/progress.js");
+const { lessons } = await import("../src/lessons/lessons.js");
+const { allChallenges } = await import("../src/challenges/index.js");
+const { debugChallenges } = await import("../src/challenges/debugging.js");
+const { cheatSheet } = await import("../src/cheatsheet/cheatsheet.js");
+const { BADGES } = await import("../src/progress/badges.js");
+
+// 1. content integrity
+assert("Lessons library non-empty", lessons.length >= 30, `${lessons.length} lessons`);
+assert("Challenge library has 60 challenges", allChallenges.length === 60, `${allChallenges.length}`);
+assert("Debugging exercises present", debugChallenges.length >= 10, `${debugChallenges.length}`);
+assert("Cheat sheet has 40+ topics", cheatSheet.length >= 40, `${cheatSheet.length}`);
+assert("10+ badges defined", BADGES.length >= 10, `${BADGES.length}`);
+assert("All challenges have hints + solution + tests",
+  allChallenges.every((c) => c.hints?.length === 3 && c.solution && c.tests?.length));
+
+// 2. pure functions
+assert("normalizeOutput trims whitespace", normalizeOutput("  a \n b \n\n") === "a\nb");
+assert("outputMatches ignores trailing spaces", outputMatches("a \n b", "a\nb"));
+assert("structural check finds required loop", structuralCheck("x = 1", ["for|while"]).length === 1);
+assert("structural check passes loop code", structuralCheck("for i in x: pass", ["for|while"]).length === 0);
+assert("explainError detects NameError", explainError("Traceback...\nNameError: name 'x' is not defined").friendly !== null);
+assert("explainError detects missing colon", explainError('SyntaxError: expected \':\'', "if age > 18").friendly !== null);
+
+// 3. localStorage
+store.set(store.keys.savedCode, { code: "print(1)", date: "now" });
+assert("store round-trips data", store.get(store.keys.savedCode, {}).code === "print(1)");
+history.add({ code: "x = 1", status: true, source: "test" });
+assert("history records runs", history.all().length >= 1);
+history.remove(history.all()[0].id);
+
+// 4. progress
+const xpBefore = progress.data.xp;
+progress.completeLesson("test-lesson", "Fundamentals");
+assert("lesson completion grants XP", progress.data.xp > xpBefore);
+progress.solveChallenge("test-challenge", { topic: "Fundamentals" });
+assert("challenge completion recorded", progress.isChallengeDone("test-challenge"));
+
+// 5. engine (async)
+try {
+  await engine.init();
+  assert("Python engine initialized", true);
+
+  const r1 = await engine.run("print('Hello')\nx = 2 + 3");
+  assert("basic execution works", r1.ok && r1.output === "Hello");
+  assert("variable extraction works", r1.variables?.x?.value === 5 && r1.variables?.x?.type === "int");
+  assert("types captured", r1.variables?.x?.type === "int");
+
+  const r2 = await engine.run('name = "Maria"\nprint(f"Hi {name}")');
+  assert("f-strings work", r2.ok && r2.output === "Hi Maria");
+
+  const r3 = await engine.run("1/0");
+  assert("errors are caught", !r3.ok && /ZeroDivisionError/.test(r3.error));
+
+  const r4 = await engine.run("if True\n    pass", {});
+  assert("syntax errors reported", !r4.ok && /SyntaxError/.test(r4.error));
+
+  const r5 = await engine.run("import math\nprint(math.sqrt(16))");
+  assert("modules (math) work", r5.ok && r5.output === "4.0");
+} catch (e) {
+  log("Python engine initialized", false, String(e));
+}
+
+results.insertAdjacentHTML("beforeend", `<p>Done.</p>`);
+</script>
+</body>
+</html>
