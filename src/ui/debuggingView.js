@@ -59,19 +59,19 @@ function renderBugDetail(root, bugId, openBug) {
       <button class="pbtn" id="bugHint" style="margin-top:10px">Get a hint (0/3)</button>
       <div class="solution-area"><button class="pbtn danger" id="bugSolution">Reveal the fix</button></div>
     </aside>
-    <section style="display:flex;flex-direction:column;min-height:0">
-      <div class="panel" style="flex:1">
-        <div class="panel-head"><span class="panel-title">buggy.py</span></div>
-        <div style="display:flex;flex-direction:column">
-          <div id="bugEditorHost"></div>
+    <section class="ch-main">
+      <div class="panel" style="flex:1;min-height:0">
+        <div class="panel-head"><span class="panel-title"><span class="fname">buggy.py</span></span></div>
+        <div class="ch-editor-col">
+          <div id="bugEditorHost" class="editor-host"></div>
           <div class="runbar">
             <button class="pbtn primary" id="bugRun">Run Code</button>
             <button class="pbtn" id="bugValidate">Validate Fix</button>
             <button class="pbtn danger" id="bugStop">Stop</button>
           </div>
         </div>
-        <div class="term" id="bugOut" aria-live="polite" style="max-height:180px;overflow:auto">Run the broken code first to see what goes wrong.</div>
-        <div id="bugResult"></div>
+        <div class="term" id="bugOut" aria-live="polite" style="flex-shrink:0;max-height:220px;overflow:auto">Run the broken code first to see what goes wrong.</div>
+        <div id="bugResult" style="flex-shrink:0"></div>
       </div>
     </section>
   </div>`;

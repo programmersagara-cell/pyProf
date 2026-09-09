@@ -39,9 +39,7 @@ def _pl_collect():
     for k, v in list(globals().items()):
         if k.startswith("_") or k in ("json", "types", "math", "random", "sys"):
             continue
-        if isinstance(v, (types.ModuleType, type(_pl_collect))):
-            continue
-        if callable(v) and not isinstance(v, type):
+        if isinstance(v, (_pl_types.ModuleType, type(_pl_collect))):
             continue
         try:
             out[k] = {"type": type(v).__name__, "value": _pl_conv(v), "repr": repr(v)[:160]}
@@ -126,13 +124,20 @@ self.onmessage = async (e) => {
     }
     const full = (msg.prelude ? msg.prelude + "\n" : "") + msg.code;
     const t0 = performance.now();
+    /** Extract user variables. Works even after an error, so the inspector
+     *  shows the partial state that existed when the program failed. */
+    function extractVars() {
+      try {
+        return JSON.parse(pyodide.runPython(EXTRACT_VARS)) || {};
+      } catch (ve) {
+        // Never silent: a broken extractor would look like "no variables".
+        console.warn("[python-lab] variable extraction failed:", ve);
+        return {};
+      }
+    }
     try {
       await runPython(full);
-      // Extract user variables (skip helpers defined by the sandbox itself)
-      let vars = {};
-      try {
-        vars = JSON.parse(pyodide.runPython(EXTRACT_VARS));
-      } catch (ve) { vars = {}; }
+      const vars = extractVars();
       self.postMessage({
         type: "result", id: msg.id, ok: true,
         output: outputBuffer.join("\n"),
@@ -144,6 +149,7 @@ self.onmessage = async (e) => {
         type: "result", id: msg.id, ok: false,
         output: outputBuffer.join("\n"),
         error: String(err && err.message || err),
+        variables: extractVars(),
         time: (performance.now() - t0) / 1000,
       });
     }

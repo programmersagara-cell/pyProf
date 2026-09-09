@@ -92,22 +92,22 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
         <button class="pbtn danger" id="btnSolution">Reveal full solution (costs XP)</button>
       </div>
     </aside>
-    <section style="display:flex;flex-direction:column;min-height:0">
-      <div class="panel" style="flex:1">
-        <div class="panel-head"><span class="panel-title">solution.py</span>
+    <section class="ch-main">
+      <div class="panel" style="flex:1;min-height:0">
+        <div class="panel-head"><span class="panel-title"><span class="fname">solution.py</span></span>
           <span class="spacer"></span>
           <button class="pbtn danger" id="chResetStarter">Reset starter code</button>
         </div>
-        <div style="display:flex;flex-direction:column">
-          <div id="chEditorHost"></div>
+        <div class="ch-editor-col">
+          <div id="chEditorHost" class="editor-host"></div>
           <div class="runbar">
             <button class="pbtn primary" id="chRun">Run (sample input)</button>
             <button class="pbtn" id="chValidate">Validate Solution</button>
             <button class="pbtn danger" id="chStop">Stop</button>
           </div>
         </div>
-        <div class="term" id="chOut" aria-live="polite" style="max-height:180px;overflow:auto">Run your solution with the sample input, then Validate.</div>
-        <div id="chResult"></div>
+        <div class="term" id="chOut" aria-live="polite" style="flex-shrink:0;max-height:220px;overflow:auto">Run your solution with the sample input, then Validate.</div>
+        <div id="chResult" style="flex-shrink:0"></div>
       </div>
     </section>
   </div>`;

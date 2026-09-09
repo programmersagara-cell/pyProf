@@ -288,10 +288,15 @@ html[data-theme="light"] .pbtn.primary{color:#fff}
   padding:1px 5px;font-family:var(--font-mono);font-size:var(--fs-12);color:var(--text);
 }
 .exp-text p{margin:var(--sp-2) 0}
-/* ---- challenge view ---- */
-.ch-detail{max-width:1100px;margin:0 auto;padding:var(--sp-5);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:var(--sp-4);height:100%}
+/* ---- challenge / debug detail: brief left, editor+output right.
+   The editor is the primary surface — it gets the remaining height. ---- */
+.ch-detail{max-width:1280px;margin:0 auto;padding:var(--sp-5);display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.35fr);gap:var(--sp-4);height:100%}
 .ch-side{overflow-y:auto;padding-right:6px}
 .ch-side h1{font-size:var(--fs-20);margin-bottom:6px}
+.ch-editor-col{flex:1;display:flex;flex-direction:column;min-height:0}
+.ch-editor-col .editor-host{flex:1;min-height:300px}
+.ch-editor-col .editor-host .CodeMirror{height:100%}
+.ch-main{display:flex;flex-direction:column;min-height:0;min-width:0}
 .hintbox{border:1px solid var(--border);border-radius:var(--r-md);margin-top:var(--sp-2);overflow:hidden;background:var(--panel)}
 .hintbox .hint-label{
   font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
@@ -418,8 +423,12 @@ html[data-theme="light"] .boot .boot-mark{color:#fff}
 /* ---- engine status / run-gate helpers ---- */
 /* ---- responsive: restack the instrument, keep density ---- */
 @media (max-width:1000px){
-  .ch-detail{grid-template-columns:1fr;display:block;overflow-y:auto}
+  .ch-detail{grid-template-columns:1fr;display:block;overflow-y:auto;height:auto}
   .ch-side{overflow:visible;margin-bottom:var(--sp-4)}
+  /* Stacked layout: editor keeps a generous fixed height instead of flex-grow. */
+  .ch-editor-col .editor-host{flex:none;min-height:360px}
+  .ch-main{display:block}
+  .ch-main .panel{display:flex;flex-direction:column}
 }
 @media (max-width:900px){
   .ws{display:flex;flex-direction:column;overflow-y:auto}
