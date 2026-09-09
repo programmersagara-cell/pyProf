@@ -144,6 +144,9 @@ function boot() {
     clearTimeout(fallbackTimer);
     overlay.style.opacity = "0";
     setTimeout(() => overlay.remove(), 450);
+    // Always render the workspace when the overlay is removed,
+    // even if engine.init() never resolved or rejected.
+    setView("workspace");
   }
   const fallbackTimer = setTimeout(removeOverlay, 6000);
 
@@ -179,7 +182,6 @@ function boot() {
     engine.init()
       .then(() => {
         removeOverlay();
-        setView("workspace");
         toast("Python engine ready — happy coding! 🐍");
       })
       .catch((err) => {
@@ -191,7 +193,6 @@ function boot() {
           "⚠ Could not load the Python engine (offline or CDN blocked). Check your connection and reload.";
         // Auto-dismiss after 4s (or immediately if user clicks)
         setTimeout(removeOverlay, 4000);
-        setView("workspace");
         toast("⚠ Python engine failed to load — check your internet connection.", false);
         console.error("[python-lab] engine boot failed:", err);
       });
