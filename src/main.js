@@ -128,8 +128,38 @@ function showShortcuts() {
 function boot() {
   const overlay = document.createElement("div");
   overlay.className = "boot";
-  overlay.innerHTML = "<div class=\"logo\">PY</div><div class=\"bt\">Initializing Python Engine...</div><div class=\"bbar\"><div></div></div>";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = "<div class=\"logo\">PY</div><div class=\"bt\">Initializing Python Engine...</div><div class=\"bbar\"><div></div></div><div class=\"bsub\">Starting up...</div>";
   document.body.appendChild(overlay);
+
+  // Determinate-feel progress: the bar creeps forward while Pyodide (~10MB
+  // WASM) downloads, then jumps on real engine milestones. Never stuck.
+  const barEl = overlay.querySelector(".bbar");
+  const barFill = overlay.querySelector(".bbar>div");
+  const subEl = overlay.querySelector(".bsub");
+  let shownPct = 5;
+  function paintPct(p, label) {
+    shownPct = Math.max(shownPct, Math.min(99, Math.round(p)));
+    if (barFill) barFill.style.width = shownPct + "%";
+    if (barEl) barEl.setAttribute("aria-valuenow", String(shownPct));
+    if (label && subEl) subEl.textContent = label + "  " + shownPct + "%";
+    else if (subEl && !label) subEl.textContent = "Loading... " + shownPct + "%";
+  }
+  paintPct(5, "Starting up");
+  const creepTimer = setInterval(() => {
+    // Ease toward 90% but never reach it without real progress.
+    if (overlayRemoved) { clearInterval(creepTimer); return; }
+    const next = shownPct + Math.max(0.3, (90 - shownPct) * 0.04);
+    paintPct(Math.min(90, next));
+  }, 300);
+  function finishBar() {
+    clearInterval(creepTimer);
+    shownPct = 100;
+    if (barFill) barFill.style.width = "100%";
+    if (barEl) barEl.setAttribute("aria-valuenow", "100");
+    if (subEl) subEl.textContent = "Ready  100%";
+  }
 
   // Boot overlay dismissal is ENGINE-DRIVEN (not a blind timer):
   // the overlay stays until the Python runtime is ready or has failed.
@@ -138,6 +168,7 @@ function boot() {
   function removeOverlay() {
     if (overlayRemoved) return;
     overlayRemoved = true;
+    clearInterval(creepTimer);
     clearTimeout(fallbackTimer);
     overlay.style.opacity = "0";
     setTimeout(() => overlay.remove(), 450);
@@ -182,23 +213,25 @@ function boot() {
       const bt = overlay.querySelector(".bt");
       if (!bt) return;
       const text = typeof stage === "string" ? stage : (stage && stage.stage) || stage;
-      if (text === "loading-pyodide") bt.textContent = "Loading Python Runtime… (downloading WebAssembly)";
-      else if (text === "boot-python") bt.textContent = "Initializing Python Engine…";
-      else if (text === "verifying") bt.textContent = "Verifying Python runtime…";
-      else bt.textContent = "Preparing sandbox…";
+      if (text === "loading-pyodide") { bt.textContent = "Loading Python Runtime... (downloading WebAssembly)"; paintPct(35, "Downloading Python runtime"); }
+      else if (text === "boot-python") { bt.textContent = "Initializing Python Engine..."; paintPct(70, "Starting Python"); }
+      else if (text === "verifying") { bt.textContent = "Verifying Python runtime..."; paintPct(90, "Verifying"); }
+      else { bt.textContent = "Preparing sandbox..."; paintPct(55, "Preparing sandbox"); }
     });
 
     engine.on("status", (s) => {
       if (!s) return;
       const bt = overlay.querySelector(".bt");
-      if (s.state === "error" && bt) bt.textContent = s.message || "Python engine failed to load.";
+      if (s.state === "ready") { finishBar(); }
+      else if (s.state === "error" && bt) { clearInterval(creepTimer); bt.textContent = s.message || "Python engine failed to load."; }
       else if (s.state === "loading" && bt && s.message) bt.textContent = s.message;
-      else if (s.state === "restarting" && bt) bt.textContent = s.message || "Restarting Python engine…";
+      else if (s.state === "restarting" && bt) bt.textContent = s.message || "Restarting Python engine...";
     });
 
     function bootDone() {
       // Engine finished booting (ready OR failed): dismiss overlay, show app.
-      removeOverlay();
+      finishBar();
+      setTimeout(removeOverlay, 250);
       const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
       if (st.state === "ready") toast("Python Ready - happy coding!");
       else if (st.state === "error") toast("Python engine failed to load - check connection. Press Retry in the Workspace.", false);
