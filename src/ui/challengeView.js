@@ -151,9 +151,14 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
     const res = await runExample(code, ch.defaultInputs);
     if (runBtn) { runBtn.disabled = false; }
     renderRunResult(out, res, code);
+    // Run succeeded → check the hidden tests right away so completing the
+    // criteria records and celebrates without a second button press.
+    if (res.ok) await doValidate({ fromRun: true });
   }
 
-  async function doValidate() {
+  /** Validate against hidden tests. opts: { fromRun } — run-triggered checks
+   *  don't count as scored attempts (exploratory, first-try stays intact). */
+  async function doValidate(opts = {}) {
     const resultBox = document.getElementById("chResult");
     const out = document.getElementById("chOut");
     const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
@@ -163,21 +168,22 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
       const ok = await engine.waitForReady(90000);
       if (!ok) { out.textContent = "Python engine is still loading. Please wait, then Validate again."; return; }
     }
-    out.textContent = "Validating against hidden test cases…";
+    if (!opts.fromRun) out.textContent = "Validating against hidden test cases…";
+    else out.innerHTML += `<hr><span class="meta">Checking against hidden tests…</span>`;
     const code = cm.getValue();
     const validation = await runTests(ch, code);
     const pass = validation.passed;
     history.add({ code, status: pass, error: validation.error || null, source: `challenge: ${ch.title}`, challengeName: ch.title });
 
     if (!pass) {
-      progress.recordFail(ch.id, ch.track);
+      if (!opts.fromRun) progress.recordFail(ch.id, ch.track);
       resultBox.innerHTML = resultCard(false, validation);
       return;
     }
     const res = progress.solveChallenge(ch.id, { topic: ch.track, usedHints: hintsShown > 0, usedSolution });
     const badges = evaluateBadges({ challenges: allChallenges.length, lessons: 44 });
     resultBox.innerHTML = resultCard(true, validation);
-    if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
+    if (res) toast(`Challenge complete! +${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
     else toast("Already completed — no additional XP");
     for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
     // Reflect completion immediately in the detail header.
@@ -186,7 +192,7 @@ export function renderChallengeDetail(root, challengeId, openChallenge) {
   }
 
   document.getElementById("chRun").addEventListener("click", doRun);
-  document.getElementById("chValidate").addEventListener("click", doValidate);
+  document.getElementById("chValidate").addEventListener("click", () => doValidate());
   document.getElementById("chStop").addEventListener("click", () => engine.stop());
   document.getElementById("chResetStarter").addEventListener("click", () => cm.setValue(ch.starter));
 }

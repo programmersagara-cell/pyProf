@@ -7,6 +7,7 @@ import { createPythonEditor } from "../editor/editor.js";
 import { progress } from "../progress/progress.js";
 import { history } from "../history/history.js";
 import { toast, escapeHtml } from "./helpers.js";
+import { normalizeOutput, outputMatches } from "../validation/validator.js";
 
 export function renderLessons(root, { openLesson, currentId }) {
   if (currentId) return renderLessonDetail(root, currentId, openLesson);
@@ -121,7 +122,12 @@ export function renderLessonDetail(root, lessonId, openLesson) {
     const res = await engine.run(code);
     if (res.notReady) { out.textContent = res.error; return; }
     if (res.ok) {
-      out.innerHTML = `${escapeHtml(res.output)}<span class="meta">\n✓ ${res.time.toFixed(2)}s</span>`;
+      const matched = outputMatches(res.output, lesson.expectedOutput);
+      out.innerHTML = `${escapeHtml(res.output)}<span class="meta">\n✓ ${res.time.toFixed(2)}s</span>${
+        matched
+          ? `\n<hr><span class="err-try">✓ Output matches the expected output — press "Mark lesson complete" to record it.</span>`
+          : ""
+      }`;
     } else if (res.error) {
       out.innerHTML = renderErrorHTML(explainError(res.error, code));
     }

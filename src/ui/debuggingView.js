@@ -112,6 +112,9 @@ function renderBugDetail(root, bugId, openBug) {
     if (res.notReady) { out.textContent = res.error; return; }
     if (res.ok) {
       out.innerHTML = `${escapeHtml(res.output)}<hr><span class="meta">✓ Ran in ${res.time.toFixed(2)}s</span>`;
+      // The user's mental model: running the fixed program IS the test.
+      // Auto-check on success so completion records and celebrates immediately.
+      await doValidate({ fromRun: true });
     } else if (res.error) {
       out.innerHTML = renderErrorHTML(explainError(res.error, code));
     }
@@ -119,7 +122,9 @@ function renderBugDetail(root, bugId, openBug) {
 
   document.getElementById("bugRun").addEventListener("click", doRun);
   document.getElementById("bugStop").addEventListener("click", () => engine.stop());
-  document.getElementById("bugValidate").addEventListener("click", async () => {
+  /** Validate the current code. opts: { fromRun } — run-triggered validation
+   *  gives instant completion feedback but doesn't count as a scored attempt. */
+  async function doValidate(opts = {}) {
     const out = document.getElementById("bugOut");
     const resultBox = document.getElementById("bugResult");
     const st = engine.getStatus ? engine.getStatus() : { state: engine.ready ? "ready" : "loading" };
@@ -129,7 +134,7 @@ function renderBugDetail(root, bugId, openBug) {
       const ok = await engine.waitForReady(90000);
       if (!ok) { out.textContent = "Python engine is still loading. Please wait, then Validate again."; return; }
     }
-    out.textContent = "Validating…";
+    out.innerHTML += `<hr><span class="meta">${opts.fromRun ? "Checking against the expected output…" : "Validating…"}</span>`;
     const code = cm.getValue();
     // Validation = behaviour: the fixed program must produce the expected output.
     const validation = await validateChallenge({ tests: [{ inputs: {}, expected: bug.expected }] }, code);
@@ -137,7 +142,8 @@ function renderBugDetail(root, bugId, openBug) {
     history.add({ code, status: pass, error: null, source: `debug: ${bug.title}`, challengeName: bug.title });
 
     if (!pass) {
-      progress.recordFail(bug.id, bug.track, "debug");
+      // Auto-check after Run is exploratory: it must not burn an attempt.
+      if (!opts.fromRun) progress.recordFail(bug.id, bug.track, "debug");
       const actual = validation.results[0]?.actual ?? "";
       resultBox.innerHTML = `
         <div class="result-card fail" role="status">
@@ -151,12 +157,13 @@ function renderBugDetail(root, bugId, openBug) {
     const badges = evaluateBadges({ challenges: 60, lessons: 44 });
     resultBox.innerHTML = `
       <div class="result-card pass" role="status">
-        <h3><span class="verdict">PASS</span>Bug fixed — the program behaves correctly now</h3>
+        <h3><span class="verdict">PASS</span>${opts.fromRun ? "Fixed — your program now produces the expected output" : "Bug fixed — the program behaves correctly now"}</h3>
       </div>`;
-    if (res) toast(`+${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
+    if (res) toast(`Bug fixed! +${res.gained} XP${res.levelUp ? ` — Level up: ${res.levelUp}!` : ""}`, true);
     else toast("Already completed — no additional XP");
     for (const b of badges) toast(`Badge unlocked: ${b.name} — ${b.desc}`, true);
     const pill = document.getElementById("bugDonePill");
     if (pill) pill.hidden = false;
-  });
+  }
+  document.getElementById("bugValidate").addEventListener("click", () => doValidate());
 }
