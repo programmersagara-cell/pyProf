@@ -25,6 +25,7 @@ export function renderDashboard(root, { openLesson, go }) {
   const overall = lessons.length + allChallenges.length + debugChallenges.length;
   const doneTotal = lessonsDone + challengesDone + bugsDone;
   const overallPct = overall ? Math.round((doneTotal / overall) * 100) : 0;
+  const upNext = lessons.filter((l) => !progress.isLessonDone(l.id)).slice(0, 5);
 
   const continueBtn = nextLesson
     ? `<button class="dash-cta" id="dashContinue">Continue: ${escapeHtml(nextLesson.title)} <span class="dash-cta-sub">Lesson ${nextLesson.num} · ${escapeHtml(nextLesson.track)}</span></button>`
@@ -63,7 +64,11 @@ export function renderDashboard(root, { openLesson, go }) {
         ${dashBarRow("Lessons", lessonsDone, lessons.length)}
         ${dashBarRow("Challenges", challengesDone, allChallenges.length)}
         ${dashBarRow("Bug hunts", bugsDone, debugChallenges.length)}
-        <div class="dash-progress-row"><span>Level</span><div class="dash-bar sm" role="progressbar" aria-valuenow="${levelPct}" aria-valuemin="0" aria-valuemax="100" aria-label="Level progress"><div style="width:${levelPct}%"></div></div><span class="mono">${escapeHtml(lvl.name)}</span></div>
+        <div class="dash-progress-row"><span>Level</span><div class="dash-bar sm" role="progressbar" aria-valuenow="${levelPct}" aria-valuemin="0" aria-valuemax="100" aria-label="Level progress"><div style="width:${levelPct}%"></div></div><span class="mono" title="${escapeHtml(lvl.name)}">${levelPct}%</span></div>
+        <h2 id="dashNextH">Up next</h2>
+        ${upNext.length
+          ? `<ul class="dash-next">${upNext.map((l) => `<li><button class="dash-next-item" data-lesson="${escapeHtml(l.id)}"><span class="mono dash-next-num">${l.num}</span><span class="dash-next-title">${escapeHtml(l.title)}</span><span class="dash-next-meta">${escapeHtml(l.track)}</span></button></li>`).join("")}</ul>`
+          : `<p class="empty-hint">Every lesson is completed. Reopen any lesson from the Lessons tab to review it.</p>`}
       </section>
 
       <section class="dash-panel" aria-labelledby="dashActH">
@@ -89,6 +94,9 @@ export function renderDashboard(root, { openLesson, go }) {
   wire("dashGoChallenges", () => go("challenges"));
   wire("dashGoDebugging", () => go("debugging"));
   wire("dashGoCheat", () => go("cheatsheet"));
+  root.querySelectorAll(".dash-next-item").forEach((btn) => {
+    btn.addEventListener("click", () => openLesson(btn.dataset.lesson));
+  });
 }
 
 function dashBarRow(label, done, total) {
