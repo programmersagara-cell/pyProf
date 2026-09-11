@@ -1,6 +1,7 @@
 /* PYTHON·LAB — application entry point: router, theme, shortcuts, boot. */
 
 import { engine } from "./engine/pythonEngine.js";
+import { renderDashboard } from "./ui/dashboardView.js";
 import { renderWorkspace, runCode, saveCode, refreshEditorTheme } from "./ui/workspace.js";
 import { renderLessons } from "./ui/lessonsView.js";
 import { renderChallenges } from "./ui/challengeView.js";
@@ -15,7 +16,7 @@ import { toast, openModal, closeModal } from "./ui/helpers.js";
 const root = document.getElementById("viewRoot");
 
 const state = {
-  view: "workspace",
+  view: "dashboard",
   lessonId: null,
   challengeId: null,
   bugId: null,
@@ -68,6 +69,7 @@ function setView(view, opts = {}) {
   const openBug = (id) => setView("debugging", { bugId: id });
 
   switch (view) {
+    case "dashboard": renderDashboard(root, { openLesson, go: (v) => setView(v) }); break;
     case "workspace": renderWorkspace(root); break;
     case "lessons": renderLessons(root, { openLesson, currentId: state.lessonId }); break;
     case "challenges": renderChallenges(root, { openChallenge, currentId: state.challengeId, filters: state.challengeFilters }); break;
@@ -91,7 +93,7 @@ document.getElementById("mainNav").addEventListener("click", (e) => {
   const btn = e.target.closest(".navbtn");
   if (btn) setView(btn.dataset.view);
 });
-document.getElementById("brandHome").addEventListener("click", () => setView("workspace"));
+document.getElementById("brandHome").addEventListener("click", () => setView("dashboard"));
 /* ---------- keyboard shortcuts ---------- */
 document.addEventListener("keydown", (e) => {
   const mod = e.ctrlKey || e.metaKey;
@@ -102,6 +104,7 @@ document.addEventListener("keydown", (e) => {
     const target = e.target;
     const typing = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable || target.closest(".CodeMirror");
     if (typing) return;
+    if (e.key.toLowerCase() === "d") { setView("dashboard"); return; }
     const map = { "1": "workspace", "2": "lessons", "3": "challenges", "4": "debugging", "5": "cheatsheet", "6": "analytics", "7": "history" };
     if (map[e.key]) setView(map[e.key]);
   }
@@ -122,6 +125,7 @@ function showShortcuts() {
       <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save code locally</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Close dialogs</td></tr>
       <tr><td><kbd>1</kbd> … <kbd>7</kbd></td><td>Switch views (Workspace, Lessons, Challenges, Debugging, Cheat Sheet, Progress, History)</td></tr>
+      <tr><td><kbd>D</kbd></td><td>Dashboard</td></tr>
       <tr><td><kbd>Tab</kbd></td><td>Indent 4 spaces in the editor</td></tr>
     </table>
     <p style="margin-top:14px;color:var(--text-dim)">Everything runs locally in your browser — your code and progress never leave this device.</p>`);
@@ -174,8 +178,8 @@ function boot() {
     clearTimeout(fallbackTimer);
     overlay.style.opacity = "0";
     setTimeout(() => overlay.remove(), 450);
-    // Always render the workspace when the overlay is removed.
-    setView("workspace");
+    // Always render the dashboard when the overlay is removed.
+    setView("dashboard");
   }
   const fallbackTimer = setTimeout(() => {
     if (!engine.ready && engine.getStatus && engine.getStatus().state !== "error") {
@@ -280,7 +284,7 @@ function boot() {
     const bt = overlay.querySelector(".bt");
     if (bt) bt.textContent = "Startup error. Click anywhere to continue to the workspace.";
     setTimeout(removeOverlay, 4000);
-    setView("workspace");
+    setView("dashboard");
   }
 }
 
@@ -298,7 +302,7 @@ try {
   console.error("[python-lab] boot threw:", err);
   const overlay = document.querySelector(".boot");
   if (overlay) overlay.remove();
-  setView("workspace");
+  setView("dashboard");
 }
 
 // Signal that the app has loaded successfully — prevents the fallback

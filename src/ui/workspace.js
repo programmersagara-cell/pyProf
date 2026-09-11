@@ -37,6 +37,8 @@ export function renderWorkspace(root) {
         <div class="panel-head">
           <span class="panel-title">Editor <span class="fname">main.py</span></span>
           <span class="spacer"></span>
+          <button class="pbtn" id="btnCopyCode" title="Copy code to clipboard">Copy</button>
+          <button class="pbtn" id="btnDownload" title="Download as main.py">Download</button>
           <button class="pbtn" id="btnFormat" title="Normalize indentation (4 spaces per level)">Tidy</button>
           <button class="pbtn" id="btnClear" title="Clear editor">Clear</button>
           <button class="pbtn danger" id="btnReset" title="Reset code to default">Reset code</button>
@@ -69,6 +71,7 @@ export function renderWorkspace(root) {
         <div class="panel-head">
           <span class="panel-title">Output</span>
           <span class="spacer"></span>
+          <button class="pbtn" id="btnCopyTerm" title="Copy output to clipboard">Copy output</button>
           <button class="pbtn" id="btnClearTerm">Clear</button>
         </div>
         <div class="panel-body term" id="termBody" aria-live="polite">
@@ -94,9 +97,39 @@ export function renderWorkspace(root) {
   document.getElementById("btnReset").addEventListener("click", () => { cm.setValue(DEFAULT_CODE); toast("Code reset to default"); });
   document.getElementById("btnClear").addEventListener("click", () => { cm.setValue(""); cm.focus(); });
   document.getElementById("btnSave").addEventListener("click", saveCode);
+  document.getElementById("btnCopyCode").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(cm.getValue());
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+    } catch (err) {
+      toast("Clipboard blocked by the browser — select the code and copy manually", "err");
+    }
+  });
+  document.getElementById("btnDownload").addEventListener("click", () => {
+    const blob = new Blob([cm.getValue()], { type: "text/x-python" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "main.py";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast("Downloaded main.py");
+  });
   document.getElementById("btnResetEnv").addEventListener("click", () => { engine.reset(); toast("Python environment restarting…"); });
   document.getElementById("btnClearTerm").addEventListener("click", () => {
     document.getElementById("termBody").innerHTML = `<span class="meta">Output cleared.</span>`;
+  });
+  document.getElementById("btnCopyTerm").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const text = document.getElementById("termBody").innerText || "";
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = "Copy output"; }, 1400);
+    } catch (err) {
+      toast("Clipboard blocked by the browser — select the output and copy manually", "err");
+    }
   });
   document.getElementById("btnFormat").addEventListener("click", tidyCode);
 
